@@ -1,5 +1,7 @@
 // src/AutoConnect.Shared/DTOs/VehicleDataDto.cs
 
+using AutoConnect.Core.Enums;
+
 namespace AutoConnect.Shared.DTOs;
 
 public class VehicleDataDto

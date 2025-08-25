@@ -1,4 +1,3 @@
-// src/AutoConnect.Shared/DTOs/ApiResponse.cs
 namespace AutoConnect.Shared.DTOs;
 
 public class ApiResponse<T>
@@ -8,7 +7,7 @@ public class ApiResponse<T>
     public string? Message { get; set; }
     public string? Error { get; set; }
 
-    public static ApiResponse<T> SuccessResult(T data, string? message = null)
+    public static ApiResponse<T> Success(T data, string? message = null)
     {
         return new ApiResponse<T>
         {
@@ -18,7 +17,7 @@ public class ApiResponse<T>
         };
     }
 
-    public static ApiResponse<T> ErrorResult(string error, string? message = null)
+    public static ApiResponse<T> Error(string error, string? message = null)
     {
         return new ApiResponse<T>
         {
@@ -29,8 +28,12 @@ public class ApiResponse<T>
     }
 }
 
-public class ApiResponse : ApiResponse<object>
+public class ApiResponse
 {
+    public bool Success { get; set; }
+    public string? Message { get; set; }
+    public string? Error { get; set; }
+
     public static ApiResponse Success(string? message = null)
     {
         return new ApiResponse
