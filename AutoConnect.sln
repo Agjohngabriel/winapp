@@ -19,6 +19,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoConnect.Api.Tests", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoConnect.Core.Tests", "tests\AutoConnect.Core.Tests\AutoConnect.Core.Tests.csproj", "{0D97F953-BD89-45EC-A8C1-298DA3CC0CAB}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AutoConnect.Client", "src\AutoConnect.Client\AutoConnect.Client.csproj", "{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -101,6 +103,18 @@ Global
 		{0D97F953-BD89-45EC-A8C1-298DA3CC0CAB}.Release|x64.Build.0 = Release|Any CPU
 		{0D97F953-BD89-45EC-A8C1-298DA3CC0CAB}.Release|x86.ActiveCfg = Release|Any CPU
 		{0D97F953-BD89-45EC-A8C1-298DA3CC0CAB}.Release|x86.Build.0 = Release|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Debug|x64.Build.0 = Debug|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Debug|x86.Build.0 = Debug|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Release|x64.ActiveCfg = Release|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Release|x64.Build.0 = Release|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Release|x86.ActiveCfg = Release|Any CPU
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -112,5 +126,6 @@ Global
 		{95B020AB-6A74-4373-9358-2B32100C9EB3} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{D957DEBD-CB9F-42ED-95FF-A53F5C63399A} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{0D97F953-BD89-45EC-A8C1-298DA3CC0CAB} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{CC509EEF-ECD4-490E-B3B1-7DB4548854C6} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 	EndGlobalSection
 EndGlobal
