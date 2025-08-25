@@ -153,16 +153,16 @@ public class ClientsController : ControllerBase
         try
         {
             await _clientService.DeleteClientAsync(id);
-            return Ok(ApiResponse.Success("Client deleted successfully"));
+            return Ok(ApiResponse.CreateSuccess("Client deleted successfully"));
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(ApiResponse.Error(ex.Message));
+            return BadRequest(ApiResponse.CreateError(ex.Message));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting client {ClientId}", id);
-            return StatusCode(500, ApiResponse.Error("Internal server error"));
+            return StatusCode(500, ApiResponse.CreateError("Internal server error"));
         }
     }
 }

@@ -7,7 +7,7 @@ public class ApiResponse<T>
     public string? Message { get; set; }
     public string? Error { get; set; }
 
-    public static ApiResponse<T> Success(T data, string? message = null)
+    public static ApiResponse<T> SuccessResult(T data, string? message = null)
     {
         return new ApiResponse<T>
         {
@@ -17,7 +17,7 @@ public class ApiResponse<T>
         };
     }
 
-    public static ApiResponse<T> Error(string error, string? message = null)
+    public static ApiResponse<T> ErrorResult(string error, string? message = null)
     {
         return new ApiResponse<T>
         {
@@ -34,7 +34,8 @@ public class ApiResponse
     public string? Message { get; set; }
     public string? Error { get; set; }
 
-    public static ApiResponse Success(string? message = null)
+    // Changed method names to avoid conflict with properties
+    public static ApiResponse CreateSuccess(string? message = null)
     {
         return new ApiResponse
         {
@@ -43,7 +44,7 @@ public class ApiResponse
         };
     }
 
-    public static ApiResponse Error(string error, string? message = null)
+    public static ApiResponse CreateError(string error, string? message = null)
     {
         return new ApiResponse
         {

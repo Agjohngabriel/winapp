@@ -212,16 +212,16 @@ public class VehicleSessionsController : ControllerBase
         try
         {
             await _sessionService.EndSessionAsync(id);
-            return Ok(ApiResponse.Success("Vehicle session ended successfully"));
+            return Ok(ApiResponse.CreateSuccess("Vehicle session ended successfully"));
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(ApiResponse.Error(ex.Message));
+            return BadRequest(ApiResponse.CreateError(ex.Message));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error ending vehicle session {SessionId}", id);
-            return StatusCode(500, ApiResponse.Error("Internal server error"));
+            return StatusCode(500, ApiResponse.CreateError("Internal server error"));
         }
     }
 
@@ -231,16 +231,16 @@ public class VehicleSessionsController : ControllerBase
         try
         {
             await _sessionService.DeleteSessionAsync(id);
-            return Ok(ApiResponse.Success("Vehicle session deleted successfully"));
+            return Ok(ApiResponse.CreateSuccess("Vehicle session deleted successfully"));
         }
         catch (InvalidOperationException ex)
         {
-            return BadRequest(ApiResponse.Error(ex.Message));
+            return BadRequest(ApiResponse.CreateError(ex.Message));
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error deleting vehicle session {SessionId}", id);
-            return StatusCode(500, ApiResponse.Error("Internal server error"));
+            return StatusCode(500, ApiResponse.CreateError("Internal server error"));
         }
     }
 }
