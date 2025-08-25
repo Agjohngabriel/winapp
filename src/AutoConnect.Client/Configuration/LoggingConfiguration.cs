@@ -85,7 +85,7 @@ public class FileLoggerProvider : ILoggerProvider
 public class FileLogger : ILogger, IDisposable
 {
     private readonly string _categoryName;
-    private readonly StreamWriter _writer;
+    private readonly string _logFilePath;
     private readonly object _lock = new object();
     private bool _disposed = false;
 
@@ -93,14 +93,10 @@ public class FileLogger : ILogger, IDisposable
     {
         _categoryName = categoryName;
 
-        // Create log file with current date
-        var fileName = $"autoconnect-{DateTime.Now:yyyy-MM-dd}.log";
-        var filePath = Path.Combine(logDirectory, fileName);
-
-        _writer = new StreamWriter(filePath, append: true)
-        {
-            AutoFlush = true
-        };
+        // Create log file with current date and process ID to avoid conflicts
+        var processId = Environment.ProcessId;
+        var fileName = $"autoconnect-{DateTime.Now:yyyy-MM-dd}-{processId}.log";
+        _logFilePath = Path.Combine(logDirectory, fileName);
     }
 
     public IDisposable BeginScope<TState>(TState state) => NullScope.Instance;
@@ -122,26 +118,36 @@ public class FileLogger : ILogger, IDisposable
             logEntry += Environment.NewLine + exception.ToString();
         }
 
+        // Use file append with proper disposal to avoid locking issues
         lock (_lock)
         {
             try
             {
-                _writer.WriteLine(logEntry);
+                File.AppendAllText(_logFilePath, logEntry + Environment.NewLine);
+            }
+            catch (IOException)
+            {
+                // If file is locked, try with a different filename
+                try
+                {
+                    var backupPath = _logFilePath.Replace(".log", $"-{DateTime.Now.Ticks}.log");
+                    File.AppendAllText(backupPath, logEntry + Environment.NewLine);
+                }
+                catch
+                {
+                    // Fail silently if we can't write to any log file
+                }
             }
             catch
             {
-                // Fail silently if we can't write to log
+                // Fail silently for other exceptions
             }
         }
     }
 
     public void Dispose()
     {
-        if (!_disposed)
-        {
-            _writer?.Dispose();
-            _disposed = true;
-        }
+        _disposed = true;
     }
 
     private class NullScope : IDisposable
