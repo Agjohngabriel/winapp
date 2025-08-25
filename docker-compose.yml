@@ -1,0 +1,106 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: autoconnect-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: AutoConnectDB
+      POSTGRES_USER: autoconnect_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-AutoConnect123!}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - autoconnect-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoconnect_user -d AutoConnectDB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis for caching and real-time features
+  redis:
+    image: redis:7-alpine
+    container_name: autoconnect-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-AutoConnectRedis123!}
+    volumes:
+      - redis_data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - autoconnect-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # AutoConnect API
+  autoconnect-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: autoconnect-api
+    restart: unless-stopped
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ConnectionStrings__DefaultConnection=Host=postgres;Database=AutoConnectDB;Username=autoconnect_user;Password=${POSTGRES_PASSWORD:-AutoConnect123!}
+      - Redis__ConnectionString=redis:6379,password=${REDIS_PASSWORD:-AutoConnectRedis123!}
+      - JwtSettings__SecretKey=${JWT_SECRET_KEY:-your-super-secret-jwt-key-that-is-at-least-32-characters-long-for-production}
+      - JwtSettings__Issuer=AutoConnect.Api
+      - JwtSettings__Audience=AutoConnect.Client
+      - JwtSettings__ExpirationMinutes=60
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - autoconnect-network
+    volumes:
+      - ./logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Nginx reverse proxy (optional, for production)
+  nginx:
+    image: nginx:alpine
+    container_name: autoconnect-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - autoconnect-api
+    networks:
+      - autoconnect-network
+    profiles:
+      - production
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+
+networks:
+  autoconnect-network:
+    driver: bridge
