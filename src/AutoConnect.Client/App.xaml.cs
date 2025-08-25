@@ -32,7 +32,6 @@ public partial class App : Application
 
         base.OnStartup(e);
     }
-
     private void ConfigureServices(IServiceCollection services)
     {
         // Configuration
@@ -43,6 +42,7 @@ public partial class App : Application
         {
             builder.AddConsole();
             builder.AddDebug();
+            builder.SetMinimumLevel(LogLevel.Debug); // For better debugging during MVP
         });
 
         // HTTP Client
@@ -53,10 +53,13 @@ public partial class App : Application
             client.Timeout = TimeSpan.FromSeconds(30);
         });
 
-        // Services
+        // Services - Use real implementations now
         services.AddSingleton<IApiService, ApiService>();
-        services.AddSingleton<IVehicleService, VehicleService>();
-        services.AddSingleton<IVpnService, VpnService>();
+
+        // Switch from stub to real implementations
+        services.AddSingleton<IVehicleService, ObdVehicleService>(); // Real OBD service
+        services.AddSingleton<IVpnService, ProcessVpnService>();     // Real VPN service
+
         services.AddSingleton<Services.INavigationService, Services.NavigationService>();
 
         // ViewModels
@@ -67,7 +70,6 @@ public partial class App : Application
         // Views
         services.AddTransient<MainWindow>();
     }
-
     protected override void OnExit(ExitEventArgs e)
     {
         if (ServiceProvider is IDisposable disposable)
