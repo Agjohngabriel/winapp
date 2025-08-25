@@ -1,12 +1,10 @@
 ﻿using AutoConnect.Client.Services;
 using AutoConnect.Client.ViewModels;
-using AutoConnect.Client.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Windows;
-using System.Windows.Navigation;
 
 namespace AutoConnect.Client;
 
@@ -59,7 +57,7 @@ public partial class App : Application
         services.AddSingleton<IApiService, ApiService>();
         services.AddSingleton<IVehicleService, VehicleService>();
         services.AddSingleton<IVpnService, VpnService>();
-        services.AddSingleton<INavigationService, NavigationService>();
+        services.AddSingleton<Services.INavigationService, Services.NavigationService>();
 
         // ViewModels
         services.AddTransient<MainViewModel>();
@@ -72,7 +70,10 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        ServiceProvider?.Dispose();
+        if (ServiceProvider is IDisposable disposable)
+        {
+            disposable.Dispose();
+        }
         base.OnExit(e);
     }
 }

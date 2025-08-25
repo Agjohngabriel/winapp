@@ -14,15 +14,25 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="ModernWpf" Version="0.9.6" />
+		<!-- WPF and Core -->
 		<PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Logging" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Console" Version="8.0.1" />
+		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="8.0.1" />
 		<PackageReference Include="Microsoft.Extensions.Configuration" Version="8.0.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="8.0.0" />
+		<PackageReference Include="Microsoft.Extensions.Hosting" Version="8.0.0" />
+
+		<!-- JSON and HTTP -->
 		<PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
 		<PackageReference Include="System.Net.Http" Version="4.3.4" />
+
+		<!-- MVVM -->
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+
+		<!-- Modern WPF (Updated version) -->
+		<PackageReference Include="ModernWpfUI" Version="0.9.6" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -36,13 +46,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<Folder Include="Assets\" />
 		<Folder Include="Views\" />
-		<Folder Include="ViewModels\" />
-		<Folder Include="Services\" />
-		<Folder Include="Controls\" />
-		<Folder Include="Converters\" />
-		<Folder Include="Models\" />
 	</ItemGroup>
 
 </Project>

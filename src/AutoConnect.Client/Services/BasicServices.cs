@@ -1,6 +1,7 @@
 using AutoConnect.Shared.DTOs;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
+using System.Net.Http;
 using System.Text;
 
 namespace AutoConnect.Client.Services;
@@ -23,13 +24,13 @@ public class ApiService : IApiService
         {
             var response = await _httpClient.GetAsync(endpoint);
             var content = await response.Content.ReadAsStringAsync();
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var result = JsonConvert.DeserializeObject<ApiResponse<T>>(content);
                 return result ?? ApiResponse<T>.ErrorResult("Failed to deserialize response");
             }
-            
+
             return ApiResponse<T>.ErrorResult($"API Error: {response.StatusCode}");
         }
         catch (Exception ex)
@@ -45,16 +46,16 @@ public class ApiService : IApiService
         {
             var json = JsonConvert.SerializeObject(data);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            
+
             var response = await _httpClient.PostAsync(endpoint, content);
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var result = JsonConvert.DeserializeObject<ApiResponse<T>>(responseContent);
                 return result ?? ApiResponse<T>.ErrorResult("Failed to deserialize response");
             }
-            
+
             return ApiResponse<T>.ErrorResult($"API Error: {response.StatusCode}");
         }
         catch (Exception ex)
@@ -70,16 +71,16 @@ public class ApiService : IApiService
         {
             var json = JsonConvert.SerializeObject(data);
             var content = new StringContent(json, Encoding.UTF8, "application/json");
-            
+
             var response = await _httpClient.PutAsync(endpoint, content);
             var responseContent = await response.Content.ReadAsStringAsync();
-            
+
             if (response.IsSuccessStatusCode)
             {
                 var result = JsonConvert.DeserializeObject<ApiResponse<T>>(responseContent);
                 return result ?? ApiResponse<T>.ErrorResult("Failed to deserialize response");
             }
-            
+
             return ApiResponse<T>.ErrorResult($"API Error: {response.StatusCode}");
         }
         catch (Exception ex)
@@ -94,12 +95,12 @@ public class ApiService : IApiService
         try
         {
             var response = await _httpClient.DeleteAsync(endpoint);
-            
+
             if (response.IsSuccessStatusCode)
             {
                 return ApiResponse.CreateSuccess("Deleted successfully");
             }
-            
+
             return ApiResponse.CreateError($"API Error: {response.StatusCode}");
         }
         catch (Exception ex)

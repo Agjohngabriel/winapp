@@ -1,14 +1,215 @@
 ﻿<Window x:Class="AutoConnect.Client.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"c:\development\autoconnect\src\autoconnect.client\mainwindow.xaml.cs
-c:\development\autoconnect\src\autoconnect.client\mainwindow.xaml
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        Title="AutoConnect VPN Diagnostic Platform"
+        Height="800" Width="1400"
+        MinHeight="600" MinWidth="1000"
+        WindowStartupLocation="CenterScreen"
+        Background="{StaticResource PrimaryBackgroundBrush}"
+        ui:WindowHelper.UseModernWindowStyle="True">
 
-        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:AutoConnect.Client"
-        mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
     <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource SecondaryBackgroundBrush}" 
+                BorderBrush="{StaticResource PrimaryBorderBrush}" BorderThickness="0,0,0,1">
+            <Grid Height="60" Margin="20,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Logo and Title -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="🔗" FontSize="24" VerticalAlignment="Center" Margin="0,0,10,0"/>
+                    <TextBlock Text="AutoConnect VPN Diagnostic" 
+                               FontSize="18" FontWeight="SemiBold" 
+                               Foreground="{StaticResource PrimaryTextBrush}"
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Connection Status -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="{StaticResource SuccessBrush}" CornerRadius="12" Padding="8,4" Margin="0,0,10,0">
+                        <TextBlock Text="{Binding ConnectionStatus, FallbackValue=Connecting}" FontSize="12" Foreground="White" FontWeight="Medium"/>
+                    </Border>
+                    <TextBlock Text="Ready for diagnostics" 
+                               Foreground="{StaticResource SecondaryTextBrush}" 
+                               VerticalAlignment="Center"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Main Content -->
+        <Grid Grid.Row="1" Margin="20">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Sidebar Navigation -->
+            <Border Grid.Column="0" Background="{StaticResource SecondaryBackgroundBrush}" 
+                    CornerRadius="8" Margin="0,0,10,0">
+                <StackPanel Margin="0,20">
+                    <Button Content="🏠 Dashboard" Style="{StaticResource NavigationButtonStyle}" 
+                            Command="{Binding NavigateToCommand}" CommandParameter="Dashboard"/>
+                    <Button Content="🚗 Vehicle Data" Style="{StaticResource NavigationButtonStyle}" 
+                            Command="{Binding NavigateToCommand}" CommandParameter="VehicleData"/>
+                    <Button Content="🔧 Diagnostics" Style="{StaticResource NavigationButtonStyle}" 
+                            Command="{Binding NavigateToCommand}" CommandParameter="Diagnostics"/>
+                    <Button Content="📊 Performance" Style="{StaticResource NavigationButtonStyle}" 
+                            Command="{Binding NavigateToCommand}" CommandParameter="Performance"/>
+                    <Button Content="⚙️ Settings" Style="{StaticResource NavigationButtonStyle}" 
+                            Command="{Binding NavigateToCommand}" CommandParameter="Settings"/>
+                </StackPanel>
+            </Border>
+
+            <!-- Main Dashboard Area -->
+            <Border Grid.Column="1" Background="{StaticResource SecondaryBackgroundBrush}" 
+                    CornerRadius="8" Margin="10,0,0,0">
+                <Grid Margin="20">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+
+                    <!-- Page Title -->
+                    <TextBlock Grid.Row="0" Text="{Binding CurrentView, FallbackValue=Dashboard}" 
+                               FontSize="24" FontWeight="Bold" 
+                               Foreground="{StaticResource PrimaryTextBrush}"
+                               Margin="0,0,0,20"/>
+
+                    <!-- Dashboard Content -->
+                    <Grid Grid.Row="1">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                        </Grid.RowDefinitions>
+
+                        <!-- Quick Stats -->
+                        <UniformGrid Grid.Row="0" Columns="4" Margin="0,0,0,20">
+                            <!-- Network Stats -->
+                            <Border Background="{StaticResource CardBackgroundBrush}" 
+                                    CornerRadius="8" Padding="16" Margin="0,0,10,0">
+                                <StackPanel>
+                                    <TextBlock Text="Network" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
+                                    <TextBlock Text="{Binding ConnectionStatus, FallbackValue=Connecting}" 
+                                               Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="14"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="{Binding PingLatency, FallbackValue=0}" 
+                                                   Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
+                                        <TextBlock Text="ms • 649 B/s" 
+                                                   Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Interface Stats -->
+                            <Border Background="{StaticResource CardBackgroundBrush}" 
+                                    CornerRadius="8" Padding="16" Margin="5,0">
+                                <StackPanel>
+                                    <TextBlock Text="Interface" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
+                                    <TextBlock Text="ENET Available" Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="14"/>
+                                    <TextBlock Text="Ready" Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- VIN Status -->
+                            <Border Background="{StaticResource CardBackgroundBrush}" 
+                                    CornerRadius="8" Padding="16" Margin="5,0">
+                                <StackPanel>
+                                    <TextBlock Text="Vehicle" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
+                                    <TextBlock Text="{Binding VehicleVin, FallbackValue=Not Available}" 
+                                               Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Bold" FontSize="12"/>
+                                    <TextBlock Text="BMW" Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- Power Status -->
+                            <Border Background="{StaticResource CardBackgroundBrush}" 
+                                    CornerRadius="8" Padding="16" Margin="10,0,0,0">
+                                <StackPanel>
+                                    <TextBlock Text="Power" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
+                                    <StackPanel Orientation="Horizontal">
+                                        <TextBlock Text="KL15: " Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
+                                        <TextBlock Text="ON" Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="10"/>
+                                        <TextBlock Text=" • KL30: " Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
+                                        <TextBlock Text="ON" Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="10"/>
+                                    </StackPanel>
+                                    <TextBlock Text="{Binding BatteryVoltage, FallbackValue=0.0V}" 
+                                               Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Bold" FontSize="14"/>
+                                </StackPanel>
+                            </Border>
+                        </UniformGrid>
+
+                        <!-- Main Content Area -->
+                        <Border Grid.Row="1" Background="{StaticResource CardBackgroundBrush}" 
+                                CornerRadius="8" Padding="20">
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="300"/>
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Performance Chart Placeholder -->
+                                <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                    <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                    <TextBlock Text="Performance Monitor" 
+                                               FontSize="18" FontWeight="SemiBold" 
+                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                               HorizontalAlignment="Center"/>
+                                    <TextBlock Text="Real-time vehicle data will appear here" 
+                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               HorizontalAlignment="Center" Margin="0,5,0,0"/>
+                                    <Button Content="Refresh Data" 
+                                            Command="{Binding RefreshDataCommand}"
+                                            Margin="0,20,0,0" Padding="16,8" 
+                                            Background="{StaticResource PrimaryAccentBrush}"
+                                            Foreground="White" BorderThickness="0" 
+                                            Cursor="Hand"/>
+                                </StackPanel>
+
+                                <!-- Right Panel - Recent Activity -->
+                                <StackPanel Grid.Column="1" Margin="20,0,0,0">
+                                    <TextBlock Text="Connection Details" 
+                                               FontWeight="SemiBold" 
+                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                               Margin="0,0,0,15"/>
+
+                                    <StackPanel>
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Your IP:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
+                                            <TextBlock Text="{Binding LocalIpAddress, FallbackValue=Not Available}" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Server:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
+                                            <TextBlock Text="United Kingdom" Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Session Time:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
+                                            <TextBlock Text="00:23:45" Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Data Usage:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
+                                            <TextBlock Text="2.4 MB" Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
