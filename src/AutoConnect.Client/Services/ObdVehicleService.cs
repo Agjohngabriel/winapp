@@ -4,6 +4,8 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Configuration;
 using AutoConnect.Shared.DTOs;
 using AutoConnect.Core.Enums;
+using System.Text;
+using System.Text.RegularExpressions;
 
 namespace AutoConnect.Client.Services;
 
@@ -23,6 +25,13 @@ public class ObdVehicleService : IVehicleService, IDisposable
     private bool _simulationMode = false;
     private string? _cachedVin;
     private DateTime _lastDataSent = DateTime.MinValue;
+    private int _simulatedRpm = 0;
+    private bool _simulatedIgnition = true;
+
+    // OBD Communication tracking
+    private int _communicationErrors = 0;
+    private const int MaxCommunicationErrors = 5;
+    private string _detectedProtocol = "Unknown";
 
     public event EventHandler<VehicleDataEventArgs>? DataReceived;
 
@@ -75,8 +84,8 @@ public class ObdVehicleService : IVehicleService, IDisposable
                 var interval = _configuration.GetValue<int>("VehicleSettings:DataRefreshInterval", 2000);
                 _dataTimer.Change(TimeSpan.FromMilliseconds(500), TimeSpan.FromMilliseconds(interval));
 
-                _logger.LogInformation("Vehicle service connected successfully (Mode: {Mode})",
-                    _simulationMode ? "Simulation" : "Hardware");
+                _logger.LogInformation("Vehicle service connected successfully (Mode: {Mode}, Protocol: {Protocol})",
+                    _simulationMode ? "Simulation" : "Hardware", _detectedProtocol);
 
                 return true;
             }
@@ -103,11 +112,17 @@ public class ObdVehicleService : IVehicleService, IDisposable
                 return false;
             }
 
+            // Try common OBD baud rates
+            var baudRates = new[] { 38400, 9600, 115200, 57600 };
+
             foreach (var portName in availablePorts)
             {
-                if (await TryConnectToPortAsync(portName))
+                foreach (var baudRate in baudRates)
                 {
-                    return true;
+                    if (await TryConnectToPortAsync(portName, baudRate))
+                    {
+                        return true;
+                    }
                 }
             }
 
@@ -120,22 +135,23 @@ public class ObdVehicleService : IVehicleService, IDisposable
         }
     }
 
-    private async Task<bool> TryConnectToPortAsync(string portName)
+    private async Task<bool> TryConnectToPortAsync(string portName, int baudRate)
     {
         try
         {
-            _logger.LogDebug("Trying to connect to port {Port}", portName);
+            _logger.LogDebug("Trying to connect to port {Port} at {BaudRate} baud", portName, baudRate);
 
-            _serialPort = new SerialPort(portName, 38400, Parity.None, 8, StopBits.One)
+            _serialPort = new SerialPort(portName, baudRate, Parity.None, 8, StopBits.One)
             {
-                ReadTimeout = 2000,
-                WriteTimeout = 2000,
+                ReadTimeout = 3000,
+                WriteTimeout = 3000,
                 DtrEnable = true,
-                RtsEnable = true
+                RtsEnable = true,
+                NewLine = "\r"
             };
 
             _serialPort.Open();
-            await Task.Delay(100); // Allow port to stabilize
+            await Task.Delay(500); // Allow port to stabilize
 
             // Test connection with ATZ (reset) command
             var response = await SendObdCommandAsync("ATZ");
@@ -145,9 +161,9 @@ public class ObdVehicleService : IVehicleService, IDisposable
                 _logger.LogDebug("Port {Port} ATZ response: {Response}", portName, response.Trim());
 
                 // Check if response indicates an ELM327 or compatible adapter
-                if (response.Contains("ELM") || response.Contains("OK") || response.Contains(">"))
+                if (IsValidObdResponse(response))
                 {
-                    _logger.LogInformation("Found compatible OBD adapter on {Port}", portName);
+                    _logger.LogInformation("Found compatible OBD adapter on {Port} at {BaudRate} baud", portName, baudRate);
                     return true;
                 }
             }
@@ -160,7 +176,7 @@ public class ObdVehicleService : IVehicleService, IDisposable
         }
         catch (Exception ex)
         {
-            _logger.LogDebug("Port {Port} connection failed: {Error}", portName, ex.Message);
+            _logger.LogDebug("Port {Port} at {BaudRate} baud failed: {Error}", portName, baudRate, ex.Message);
 
             // Clean up on exception
             try
@@ -175,6 +191,18 @@ public class ObdVehicleService : IVehicleService, IDisposable
         }
     }
 
+    private bool IsValidObdResponse(string response)
+    {
+        var cleanResponse = response.ToUpper().Replace("\r", "").Replace("\n", "").Replace(" ", "");
+
+        return cleanResponse.Contains("ELM327") ||
+               cleanResponse.Contains("ELM320") ||
+               cleanResponse.Contains("OBD") ||
+               cleanResponse.Contains("OK") ||
+               cleanResponse.EndsWith(">") ||
+               cleanResponse.Contains("ATZ");
+    }
+
     private async Task InitializeObdConnectionAsync()
     {
         if (_serialPort == null || !_serialPort.IsOpen)
@@ -184,26 +212,59 @@ public class ObdVehicleService : IVehicleService, IDisposable
         {
             _logger.LogInformation("Initializing OBD connection...");
 
+            // Reset the adapter
+            await SendObdCommandAsync("ATZ");
+            await Task.Delay(1000);
+
             // Initialize ELM327 adapter
             await SendObdCommandAsync("ATE0");  // Echo off
-            await Task.Delay(50);
+            await Task.Delay(100);
             await SendObdCommandAsync("ATL0");  // Linefeeds off
-            await Task.Delay(50);
+            await Task.Delay(100);
             await SendObdCommandAsync("ATS0");  // Spaces off
-            await Task.Delay(50);
+            await Task.Delay(100);
             await SendObdCommandAsync("ATH1");  // Headers on
-            await Task.Delay(50);
+            await Task.Delay(100);
+
+            // Try to detect protocol
+            var protocolResponse = await SendObdCommandAsync("ATDP");
+            if (!string.IsNullOrEmpty(protocolResponse))
+            {
+                _detectedProtocol = ParseProtocolFromResponse(protocolResponse);
+            }
 
             // Test supported PIDs
             var pidsResponse = await SendObdCommandAsync("0100");
-            _logger.LogDebug("Supported PIDs response: {Response}", pidsResponse);
+            if (!string.IsNullOrEmpty(pidsResponse))
+            {
+                _logger.LogDebug("Supported PIDs response: {Response}", pidsResponse);
 
-            _logger.LogInformation("OBD connection initialized successfully");
+                if (!pidsResponse.Contains("NO DATA") && !pidsResponse.Contains("?"))
+                {
+                    _communicationErrors = 0; // Reset error counter on successful communication
+                }
+            }
+
+            _logger.LogInformation("OBD connection initialized successfully with protocol: {Protocol}", _detectedProtocol);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error initializing OBD connection");
+            _communicationErrors++;
         }
+    }
+
+    private string ParseProtocolFromResponse(string response)
+    {
+        var cleanResponse = response.ToUpper().Replace("\r", "").Replace("\n", "");
+
+        if (cleanResponse.Contains("CAN")) return "CAN";
+        if (cleanResponse.Contains("ISO 15765-4")) return "ISO 15765-4 (CAN)";
+        if (cleanResponse.Contains("ISO 14230-4")) return "ISO 14230-4 (KWP2000)";
+        if (cleanResponse.Contains("ISO 9141-2")) return "ISO 9141-2";
+        if (cleanResponse.Contains("J1850")) return "J1850";
+
+        return cleanResponse.Length > 0 ? cleanResponse : "Unknown";
     }
 
     private async Task<string?> SendObdCommandAsync(string command)
@@ -217,38 +278,73 @@ public class ObdVehicleService : IVehicleService, IDisposable
             _serialPort.DiscardInBuffer();
 
             // Send command
-            _serialPort.WriteLine(command + "\r");
+            _serialPort.WriteLine(command);
 
-            // Wait for response
-            var response = string.Empty;
-            var attempts = 0;
-            var maxAttempts = 20; // 2 seconds max wait
+            // Wait for response with timeout
+            var response = await ReadObdResponseAsync();
 
-            while (attempts < maxAttempts)
+            if (!string.IsNullOrEmpty(response))
             {
-                await Task.Delay(100);
-
-                while (_serialPort.BytesToRead > 0)
-                {
-                    response += _serialPort.ReadExisting();
-                }
-
-                // Check if we have a complete response (ends with > or contains response)
-                if (response.Contains(">") || response.Contains("OK") || response.Contains("NO DATA"))
-                {
-                    break;
-                }
-
-                attempts++;
+                _communicationErrors = 0; // Reset error counter on successful communication
+            }
+            else
+            {
+                _communicationErrors++;
+                _logger.LogWarning("No response to OBD command: {Command} (Errors: {Count})",
+                    command, _communicationErrors);
             }
 
-            return response.Trim();
+            return response;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error sending OBD command: {Command}", command);
+            _communicationErrors++;
+            _logger.LogError(ex, "Error sending OBD command: {Command} (Errors: {Count})",
+                command, _communicationErrors);
             return null;
         }
+    }
+
+    private async Task<string?> ReadObdResponseAsync()
+    {
+        var response = new StringBuilder();
+        var attempts = 0;
+        var maxAttempts = 30; // 3 seconds max wait
+
+        while (attempts < maxAttempts)
+        {
+            await Task.Delay(100);
+
+            while (_serialPort != null && _serialPort.BytesToRead > 0)
+            {
+                try
+                {
+                    var data = _serialPort.ReadExisting();
+                    response.Append(data);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error reading from serial port");
+                    return null;
+                }
+            }
+
+            var currentResponse = response.ToString();
+
+            // Check if we have a complete response
+            if (currentResponse.Contains(">") ||
+                currentResponse.Contains("OK") ||
+                currentResponse.Contains("NO DATA") ||
+                currentResponse.Contains("UNABLE TO CONNECT") ||
+                currentResponse.Contains("?"))
+            {
+                break;
+            }
+
+            attempts++;
+        }
+
+        return response.ToString().Trim();
     }
 
     private async Task CreateVehicleSessionAsync()
@@ -269,7 +365,7 @@ public class ObdVehicleService : IVehicleService, IDisposable
             {
                 ClientId = clientId,
                 ObdAdapterType = _simulationMode ? "Simulated" : DetectAdapterType(),
-                ObdProtocol = "ISO 15031-5 (CAN)"
+                ObdProtocol = _simulationMode ? "Simulated Protocol" : _detectedProtocol
             };
 
             var sessionResponse = await _apiService.PostAsync<VehicleSessionDto>(
@@ -299,7 +395,7 @@ public class ObdVehicleService : IVehicleService, IDisposable
     {
         if (_serialPort == null) return "Unknown";
 
-        // Try to detect adapter type based on responses
+        // Try to detect adapter type based on initialization responses
         // This is simplified - real detection would be more sophisticated
         return "ELM327"; // Default assumption
     }
@@ -308,7 +404,14 @@ public class ObdVehicleService : IVehicleService, IDisposable
     {
         if (_simulationMode)
         {
-            return "WBAPH7G56DNB12345"; // Simulated BMW VIN
+            // Simulate different VINs based on time for demo variety
+            var vinSamples = new[]
+            {
+                "WBAPH7G56DNB12345", // BMW
+                "1HGBH41JXMN109186", // Honda
+                "JM1BL1H65A1234567"  // Mazda
+            };
+            return vinSamples[_random.Next(vinSamples.Length)];
         }
 
         try
@@ -318,28 +421,33 @@ public class ObdVehicleService : IVehicleService, IDisposable
 
             if (!string.IsNullOrEmpty(response) && !response.Contains("NO DATA"))
             {
-                // Parse VIN from hex response (simplified)
                 var vin = ParseVinFromResponse(response);
                 if (!string.IsNullOrEmpty(vin))
                 {
-                    _logger.LogDebug("Read VIN from vehicle: {VIN}", vin);
+                    _logger.LogInformation("Successfully read VIN from vehicle: {VIN}", vin);
                     return vin;
                 }
             }
 
-            // Fallback: try alternative VIN request
-            response = await SendObdCommandAsync("09 02");
-            if (!string.IsNullOrEmpty(response) && !response.Contains("NO DATA"))
+            // Fallback: try alternative VIN request formats
+            var alternativeCommands = new[] { "09 02", "0902", "AT RV" };
+
+            foreach (var cmd in alternativeCommands)
             {
-                var vin = ParseVinFromResponse(response);
-                if (!string.IsNullOrEmpty(vin))
+                response = await SendObdCommandAsync(cmd);
+                if (!string.IsNullOrEmpty(response) && !response.Contains("NO DATA"))
                 {
-                    return vin;
+                    var vin = ParseVinFromResponse(response);
+                    if (!string.IsNullOrEmpty(vin))
+                    {
+                        _logger.LogInformation("VIN read using alternative command {Command}: {VIN}", cmd, vin);
+                        return vin;
+                    }
                 }
             }
 
-            _logger.LogWarning("Could not read VIN from vehicle, using placeholder");
-            return "HARDWARE_VIN_N/A";
+            _logger.LogWarning("Could not read VIN from vehicle");
+            return "VIN_READ_FAILED";
         }
         catch (Exception ex)
         {
@@ -352,24 +460,84 @@ public class ObdVehicleService : IVehicleService, IDisposable
     {
         try
         {
-            // This is a simplified VIN parser
-            // Real implementation would need to handle multi-line responses and proper hex decoding
-            var cleanResponse = response.Replace(" ", "").Replace("\r", "").Replace("\n", "").Replace(">", "");
+            // Clean the response
+            var cleanResponse = response.Replace(" ", "").Replace("\r", "").Replace("\n", "").Replace(">", "").ToUpper();
 
-            // Look for VIN pattern in hex (simplified)
-            if (cleanResponse.Length > 20)
+            // Method 1: Look for Mode 09 PID 02 response pattern
+            // Response format: 49 02 XX [VIN data in hex]
+            var match = Regex.Match(cleanResponse, @"4902\d{2}([A-F0-9]{34,})");
+            if (match.Success)
             {
-                // TODO: Implement proper hex-to-ASCII conversion for VIN
-                // For now, return a placeholder indicating we got some response
-                return "OBD_DETECTED_VIN";
+                var vinHex = match.Groups[1].Value;
+                if (vinHex.Length >= 34) // 17 characters * 2 hex digits
+                {
+                    try
+                    {
+                        var vinBytes = Convert.FromHexString(vinHex.Substring(0, 34));
+                        var vin = Encoding.ASCII.GetString(vinBytes);
+
+                        // Validate VIN format (17 alphanumeric characters, no I, O, Q)
+                        if (IsValidVin(vin))
+                        {
+                            return vin;
+                        }
+                    }
+                    catch
+                    {
+                        // Continue to next method
+                    }
+                }
+            }
+
+            // Method 2: Look for direct ASCII VIN in response
+            var asciiMatch = Regex.Match(response, @"[A-HJ-NPR-Z0-9]{17}");
+            if (asciiMatch.Success && IsValidVin(asciiMatch.Value))
+            {
+                return asciiMatch.Value;
+            }
+
+            // Method 3: Multi-line VIN response parsing
+            if (response.Contains("49 02"))
+            {
+                var hexData = Regex.Replace(cleanResponse, @"4902\d{2}", "");
+                if (hexData.Length >= 34)
+                {
+                    try
+                    {
+                        var vinBytes = Convert.FromHexString(hexData.Substring(0, 34));
+                        var vin = Encoding.ASCII.GetString(vinBytes);
+                        if (IsValidVin(vin))
+                        {
+                            return vin;
+                        }
+                    }
+                    catch
+                    {
+                        // Parsing failed
+                    }
+                }
             }
 
             return null;
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogError(ex, "Error parsing VIN from response: {Response}", response);
             return null;
         }
+    }
+
+    private bool IsValidVin(string vin)
+    {
+        if (string.IsNullOrEmpty(vin) || vin.Length != 17)
+            return false;
+
+        // VIN cannot contain I, O, or Q
+        if (vin.Contains('I') || vin.Contains('O') || vin.Contains('Q'))
+            return false;
+
+        // Should be alphanumeric
+        return vin.All(c => char.IsLetterOrDigit(c));
     }
 
     public async Task<decimal?> ReadBatteryVoltageAsync()
@@ -377,32 +545,40 @@ public class ObdVehicleService : IVehicleService, IDisposable
         if (_simulationMode)
         {
             // Simulate realistic voltage fluctuation
-            _baseVoltage += (decimal)(_random.NextDouble() - 0.5) * 0.1m;
-            _baseVoltage = Math.Max(11.8m, Math.Min(14.2m, _baseVoltage));
+            _baseVoltage += (decimal)(_random.NextDouble() - 0.5) * 0.2m;
+            _baseVoltage = Math.Max(11.5m, Math.Min(14.5m, _baseVoltage));
             return Math.Round(_baseVoltage, 1);
         }
 
         try
         {
-            // ATRV command to read voltage
+            // Method 1: ATRV command to read voltage directly from ELM327
             var response = await SendObdCommandAsync("ATRV");
 
             if (!string.IsNullOrEmpty(response))
             {
-                // Parse voltage from response like "12.6V"
-                var match = System.Text.RegularExpressions.Regex.Match(response, @"(\d+\.\d+)V");
-                if (match.Success && decimal.TryParse(match.Groups[1].Value, out var voltage))
+                // Parse voltage from response like "12.6V" or "12.6"
+                var voltageMatch = Regex.Match(response, @"(\d+\.?\d*)V?");
+                if (voltageMatch.Success && decimal.TryParse(voltageMatch.Groups[1].Value, out var voltage))
                 {
-                    return voltage;
+                    // Sanity check - typical car battery voltage range
+                    if (voltage >= 8.0m && voltage <= 16.0m)
+                    {
+                        return Math.Round(voltage, 1);
+                    }
                 }
             }
 
-            // Fallback: try to read from PID 0142 (Control module voltage)
+            // Method 2: Try to read from PID 0142 (Control module voltage)
             response = await SendObdCommandAsync("0142");
             if (!string.IsNullOrEmpty(response) && !response.Contains("NO DATA"))
             {
-                // Parse hex response to voltage (simplified)
-                return 12.6m; // Placeholder for complex parsing
+                // Parse hex response to voltage
+                var voltage = ParseVoltageFromPidResponse(response);
+                if (voltage.HasValue)
+                {
+                    return voltage;
+                }
             }
 
             return null;
@@ -414,29 +590,78 @@ public class ObdVehicleService : IVehicleService, IDisposable
         }
     }
 
+    private decimal? ParseVoltageFromPidResponse(string response)
+    {
+        try
+        {
+            // Clean response and look for PID 42 response pattern
+            var cleanResponse = response.Replace(" ", "").Replace("\r", "").Replace("\n", "").Replace(">", "");
+
+            // Response format: 41 42 XX XX (XX XX are voltage bytes)
+            var match = Regex.Match(cleanResponse, @"4142([A-F0-9]{4})");
+            if (match.Success)
+            {
+                var voltageHex = match.Groups[1].Value;
+                if (int.TryParse(voltageHex, System.Globalization.NumberStyles.HexNumber, null, out var voltageRaw))
+                {
+                    // Convert raw value to voltage (formula may vary by vehicle)
+                    var voltage = voltageRaw / 1000.0m; // Common conversion
+
+                    if (voltage >= 8.0m && voltage <= 16.0m)
+                    {
+                        return Math.Round(voltage, 1);
+                    }
+                }
+            }
+
+            return null;
+        }
+        catch
+        {
+            return null;
+        }
+    }
+
     public async Task<bool> IsIgnitionOnAsync()
     {
         if (_simulationMode)
         {
             // Simulate ignition status with some variability
-            return _random.NextDouble() > 0.2; // 80% chance ignition is on
+            _simulatedIgnition = _random.NextDouble() > 0.1; // 90% chance ignition is on during testing
+            return _simulatedIgnition;
         }
 
         try
         {
-            // Check engine RPM - if we can read it, ignition is likely on
-            var response = await SendObdCommandAsync("010C");
+            // Method 1: Check engine RPM - if we can read it and it's > 0, ignition is on
+            var rpmResponse = await SendObdCommandAsync("010C");
 
-            if (!string.IsNullOrEmpty(response) && !response.Contains("NO DATA"))
+            if (!string.IsNullOrEmpty(rpmResponse) && !rpmResponse.Contains("NO DATA"))
             {
-                // Parse RPM to determine if engine is running
-                var rpm = ParseRpmFromResponse(response);
-                return rpm > 0; // If RPM > 0, ignition is definitely on
+                var rpm = ParseRpmFromResponse(rpmResponse);
+                if (rpm >= 0) // If we can read RPM, ignition is on (even at 0 RPM)
+                {
+                    return true;
+                }
             }
 
-            // Alternative: check if we can communicate with ECU at all
-            response = await SendObdCommandAsync("0100");
-            return !string.IsNullOrEmpty(response) && !response.Contains("NO DATA");
+            // Method 2: Check if we can communicate with ECU at all
+            var pingResponse = await SendObdCommandAsync("0100");
+            if (!string.IsNullOrEmpty(pingResponse) &&
+                !pingResponse.Contains("NO DATA") &&
+                !pingResponse.Contains("UNABLE TO CONNECT"))
+            {
+                return true; // If ECU responds, ignition is likely on
+            }
+
+            // Method 3: Try reading vehicle speed - if available, ignition is on
+            var speedResponse = await SendObdCommandAsync("010D");
+            if (!string.IsNullOrEmpty(speedResponse) && !speedResponse.Contains("NO DATA"))
+            {
+                return true;
+            }
+
+            return false;
         }
         catch (Exception ex)
         {
@@ -449,21 +674,27 @@ public class ObdVehicleService : IVehicleService, IDisposable
     {
         try
         {
-            // Simplified RPM parsing from hex response
-            // Real implementation would convert hex bytes to RPM value
+            // Clean response and look for PID 0C response pattern
             var cleanResponse = response.Replace(" ", "").Replace("\r", "").Replace("\n", "").Replace(">", "");
 
-            if (cleanResponse.Length >= 8 && cleanResponse.StartsWith("410C"))
+            // Response format: 41 0C XX XX (XX XX are RPM bytes)
+            var match = Regex.Match(cleanResponse, @"410C([A-F0-9]{4})");
+            if (match.Success)
             {
-                // Extract RPM bytes and convert (simplified)
-                return _random.Next(700, 2000); // Placeholder for proper parsing
+                var rpmHex = match.Groups[1].Value;
+                if (int.TryParse(rpmHex, System.Globalization.NumberStyles.HexNumber, null, out var rpmRaw))
+                {
+                    // RPM = ((A*256)+B)/4
+                    var rpm = rpmRaw / 4;
+                    return Math.Max(0, Math.Min(8000, rpm)); // Sanity check
+                }
             }
 
-            return 0;
+            return -1; // Couldn't parse
         }
         catch
         {
-            return 0;
+            return -1;
         }
     }
 
@@ -474,14 +705,27 @@ public class ObdVehicleService : IVehicleService, IDisposable
 
         try
         {
+            // Skip reading if we have too many communication errors
+            if (_communicationErrors >= MaxCommunicationErrors)
+            {
+                _logger.LogWarning("Too many communication errors ({Count}), skipping data read", _communicationErrors);
+                return;
+            }
+
             var vin = _cachedVin ?? await ReadVinAsync();
             var voltage = await ReadBatteryVoltageAsync();
             var ignitionOn = await IsIgnitionOnAsync();
 
             // Update cached VIN if we got a new one
-            if (!string.IsNullOrEmpty(vin))
+            if (!string.IsNullOrEmpty(vin) && vin != "VIN_READ_FAILED")
             {
                 _cachedVin = vin;
+            }
+
+            // Simulate some additional data for demo
+            if (_simulationMode)
+            {
+                _simulatedRpm = ignitionOn ? _random.Next(700, 2500) : 0;
             }
 
             // Notify UI immediately
@@ -494,7 +738,7 @@ public class ObdVehicleService : IVehicleService, IDisposable
             });
 
             // Send to API (throttled to avoid spam)
-            if (_currentSessionId.HasValue && (DateTime.Now - _lastDataSent).TotalSeconds >= 2)
+            if (_currentSessionId.HasValue && (DateTime.Now - _lastDataSent).TotalSeconds >= 3)
             {
                 await SendDataToApiAsync(vin, voltage, ignitionOn);
                 _lastDataSent = DateTime.Now;
@@ -503,6 +747,7 @@ public class ObdVehicleService : IVehicleService, IDisposable
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error during periodic data reading");
+            _communicationErrors++;
         }
     }
 
@@ -517,7 +762,8 @@ public class ObdVehicleService : IVehicleService, IDisposable
                 KL15Voltage = ignitionOn ? voltage : null,
                 KL30Voltage = voltage, // KL30 is always battery voltage
                 IgnitionStatus = ignitionOn ? IgnitionStatus.KL15_On : IgnitionStatus.Off,
-                RawObdData = $"Mode: {(_simulationMode ? "Simulation" : "Hardware")}, VIN: {vin}, Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}"
+                EngineRPM = _simulationMode ? _simulatedRpm : null,
+                RawObdData = $"Mode: {(_simulationMode ? "Simulation" : "Hardware")}, Protocol: {_detectedProtocol}, VIN: {vin}, Errors: {_communicationErrors}, Time: {DateTime.Now:yyyy-MM-dd HH:mm:ss}"
             };
 
             var apiResponse = await _apiService.PostAsync<VehicleDataDto>(
@@ -555,6 +801,9 @@ public class ObdVehicleService : IVehicleService, IDisposable
                 {
                     if (_serialPort.IsOpen)
                     {
+                        // Send a final command to clean up
+                        _serialPort.WriteLine("ATZ");
+                        await Task.Delay(500);
                         _serialPort.Close();
                     }
                     _serialPort.Dispose();

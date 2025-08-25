@@ -3,11 +3,37 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         Title="AutoConnect VPN Diagnostic Platform"
-        Height="800" Width="1400"
-        MinHeight="600" MinWidth="1000"
+        Height="900" Width="1600"
+        MinHeight="700" MinWidth="1200"
         WindowStartupLocation="CenterScreen"
         Background="{StaticResource PrimaryBackgroundBrush}"
         ui:WindowHelper.UseModernWindowStyle="True">
+
+    <Window.Resources>
+        <!-- Status indicator style -->
+        <Style x:Key="StatusIndicatorStyle" TargetType="Ellipse">
+            <Setter Property="Width" Value="12"/>
+            <Setter Property="Height" Value="12"/>
+            <Setter Property="Fill" Value="{StaticResource ErrorBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsOverallConnected}" Value="True">
+                    <Setter Property="Fill" Value="{StaticResource SuccessBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+
+        <!-- Connection status badge style -->
+        <Style x:Key="StatusBadgeStyle" TargetType="Border">
+            <Setter Property="CornerRadius" Value="12"/>
+            <Setter Property="Padding" Value="12,6"/>
+            <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
+            <Style.Triggers>
+                <DataTrigger Binding="{Binding IsOverallConnected}" Value="True">
+                    <Setter Property="Background" Value="{StaticResource SuccessBrush}"/>
+                </DataTrigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
 
     <Grid>
         <Grid.RowDefinitions>
@@ -18,7 +44,7 @@
         <!-- Header -->
         <Border Grid.Row="0" Background="{StaticResource SecondaryBackgroundBrush}" 
                 BorderBrush="{StaticResource PrimaryBorderBrush}" BorderThickness="0,0,0,1">
-            <Grid Height="60" Margin="20,0">
+            <Grid Height="70" Margin="25,0">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
@@ -27,36 +53,53 @@
 
                 <!-- Logo and Title -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <TextBlock Text="🔗" FontSize="24" VerticalAlignment="Center" Margin="0,0,10,0"/>
-                    <TextBlock Text="AutoConnect VPN Diagnostic" 
-                               FontSize="18" FontWeight="SemiBold" 
-                               Foreground="{StaticResource PrimaryTextBrush}"
-                               VerticalAlignment="Center"/>
+                    <TextBlock Text="🔗" FontSize="28" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <StackPanel VerticalAlignment="Center">
+                        <TextBlock Text="AutoConnect VPN Diagnostic" 
+                                   FontSize="20" FontWeight="SemiBold" 
+                                   Foreground="{StaticResource PrimaryTextBrush}"/>
+                        <TextBlock Text="{Binding ConnectionMode, FallbackValue=Unknown}" 
+                                   FontSize="11" Foreground="{StaticResource TertiaryTextBrush}"/>
+                    </StackPanel>
                 </StackPanel>
 
                 <!-- Connection Status -->
                 <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="{StaticResource SuccessBrush}" CornerRadius="12" Padding="8,4" Margin="0,0,10,0">
-                        <TextBlock Text="{Binding ConnectionStatus, FallbackValue=Connecting}" FontSize="12" Foreground="White" FontWeight="Medium"/>
+                    <Ellipse Style="{StaticResource StatusIndicatorStyle}" Margin="0,0,10,0"/>
+                    <Border Style="{StaticResource StatusBadgeStyle}" Margin="0,0,15,0">
+                        <TextBlock Text="{Binding ConnectionStatus, FallbackValue=Connecting}" 
+                                   FontSize="13" Foreground="White" FontWeight="Medium"/>
                     </Border>
-                    <TextBlock Text="Ready for diagnostics" 
-                               Foreground="{StaticResource SecondaryTextBrush}" 
-                               VerticalAlignment="Center"/>
+                    <StackPanel Margin="10,0,0,0">
+                        <TextBlock Text="{Binding LastUpdateTime, StringFormat='Last update: {0}'}" 
+                                   Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
+                        <StackPanel Orientation="Horizontal">
+                            <Button Content="🔄 Refresh" Command="{Binding RefreshDataCommand}"
+                                    FontSize="10" Padding="6,2" Margin="0,2,5,0"
+                                    Background="Transparent" Foreground="{StaticResource AccentTextBrush}"
+                                    BorderThickness="0" Cursor="Hand"/>
+                            <Button Content="🔌 Reconnect" Command="{Binding ReconnectCommand}"
+                                    FontSize="10" Padding="6,2" Margin="5,2,0,0"
+                                    Background="Transparent" Foreground="{StaticResource AccentTextBrush}"
+                                    BorderThickness="0" Cursor="Hand"/>
+                        </StackPanel>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
 
         <!-- Main Content -->
-        <Grid Grid.Row="1" Margin="20">
+        <Grid Grid.Row="1" Margin="25">
             <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="250"/>
+                <ColumnDefinition Width="280"/>
                 <ColumnDefinition Width="*"/>
             </Grid.ColumnDefinitions>
 
             <!-- Sidebar Navigation -->
             <Border Grid.Column="0" Background="{StaticResource SecondaryBackgroundBrush}" 
-                    CornerRadius="8" Margin="0,0,10,0">
-                <StackPanel Margin="0,20">
+                    CornerRadius="12" Margin="0,0,15,0" Padding="0,25">
+                <StackPanel>
+                    <!-- Navigation Buttons -->
                     <Button Content="🏠 Dashboard" Style="{StaticResource NavigationButtonStyle}" 
                             Command="{Binding NavigateToCommand}" CommandParameter="Dashboard"/>
                     <Button Content="🚗 Vehicle Data" Style="{StaticResource NavigationButtonStyle}" 
@@ -67,147 +110,366 @@
                             Command="{Binding NavigateToCommand}" CommandParameter="Performance"/>
                     <Button Content="⚙️ Settings" Style="{StaticResource NavigationButtonStyle}" 
                             Command="{Binding NavigateToCommand}" CommandParameter="Settings"/>
+
+                    <!-- Separator -->
+                    <Border Height="1" Background="{StaticResource PrimaryBorderBrush}" 
+                            Margin="15,20" HorizontalAlignment="Stretch"/>
+
+                    <!-- Quick Actions -->
+                    <TextBlock Text="Quick Actions" Foreground="{StaticResource TertiaryTextBrush}" 
+                               FontSize="12" FontWeight="SemiBold" Margin="20,10,20,10"/>
+
+                    <Button Content="📋 Export Data" Style="{StaticResource NavigationButtonStyle}"/>
+                    <Button Content="🔍 View Logs" Style="{StaticResource NavigationButtonStyle}"/>
+                    <Button Content="❌ Disconnect All" Style="{StaticResource NavigationButtonStyle}"
+                            Command="{Binding DisconnectCommand}"/>
                 </StackPanel>
             </Border>
 
             <!-- Main Dashboard Area -->
             <Border Grid.Column="1" Background="{StaticResource SecondaryBackgroundBrush}" 
-                    CornerRadius="8" Margin="10,0,0,0">
-                <Grid Margin="20">
+                    CornerRadius="12" Margin="15,0,0,0">
+                <Grid Margin="25">
                     <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
 
                     <!-- Page Title -->
-                    <TextBlock Grid.Row="0" Text="{Binding CurrentView, FallbackValue=Dashboard}" 
-                               FontSize="24" FontWeight="Bold" 
-                               Foreground="{StaticResource PrimaryTextBrush}"
-                               Margin="0,0,0,20"/>
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,25">
+                        <TextBlock Text="{Binding CurrentView, FallbackValue=Dashboard}" 
+                                   FontSize="28" FontWeight="Bold" 
+                                   Foreground="{StaticResource PrimaryTextBrush}"/>
+                        <Border Background="{StaticResource InfoBrush}" CornerRadius="8" 
+                                Padding="8,4" Margin="15,5,0,0" VerticalAlignment="Top">
+                            <TextBlock Text="LIVE" FontSize="11" FontWeight="Bold" Foreground="White"/>
+                        </Border>
+                    </StackPanel>
 
-                    <!-- Dashboard Content -->
-                    <Grid Grid.Row="1">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto"/>
-                            <RowDefinition Height="*"/>
-                        </Grid.RowDefinitions>
+                    <!-- Status Cards Row -->
+                    <Grid Grid.Row="1" Margin="0,0,0,25">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                        <!-- Quick Stats -->
-                        <UniformGrid Grid.Row="0" Columns="4" Margin="0,0,0,20">
-                            <!-- Network Stats -->
-                            <Border Background="{StaticResource CardBackgroundBrush}" 
-                                    CornerRadius="8" Padding="16" Margin="0,0,10,0">
-                                <StackPanel>
-                                    <TextBlock Text="Network" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
-                                    <TextBlock Text="{Binding ConnectionStatus, FallbackValue=Connecting}" 
-                                               Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="14"/>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="{Binding PingLatency, FallbackValue=0}" 
-                                                   Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
-                                        <TextBlock Text="ms • 649 B/s" 
-                                                   Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
-                                    </StackPanel>
+                        <!-- VPN Status -->
+                        <Border Grid.Column="0" Background="{StaticResource CardBackgroundBrush}" 
+                                CornerRadius="10" Padding="20" Margin="0,0,8,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="🌐" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="VPN Status" Foreground="{StaticResource SecondaryTextBrush}" FontSize="13" FontWeight="Medium"/>
                                 </StackPanel>
-                            </Border>
-
-                            <!-- Interface Stats -->
-                            <Border Background="{StaticResource CardBackgroundBrush}" 
-                                    CornerRadius="8" Padding="16" Margin="5,0">
-                                <StackPanel>
-                                    <TextBlock Text="Interface" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
-                                    <TextBlock Text="ENET Available" Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="14"/>
-                                    <TextBlock Text="Ready" Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
+                                <TextBlock Text="{Binding IsVpnConnected, Converter={StaticResource BoolToConnectedConverter}, FallbackValue=Disconnected}" 
+                                           Foreground="{Binding IsVpnConnected, Converter={StaticResource BoolToStatusBrushConverter}}" 
+                                           FontWeight="Bold" FontSize="16" Margin="0,0,0,4"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding PingLatency, FallbackValue=0}" 
+                                               Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                    <TextBlock Text="ms" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                    <TextBlock Text=" • " Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                    <TextBlock Text="{Binding DataUsage, FallbackValue=0 B}" 
+                                               Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
                                 </StackPanel>
-                            </Border>
+                            </StackPanel>
+                        </Border>
 
-                            <!-- VIN Status -->
-                            <Border Background="{StaticResource CardBackgroundBrush}" 
-                                    CornerRadius="8" Padding="16" Margin="5,0">
-                                <StackPanel>
-                                    <TextBlock Text="Vehicle" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
-                                    <TextBlock Text="{Binding VehicleVin, FallbackValue=Not Available}" 
-                                               Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Bold" FontSize="12"/>
-                                    <TextBlock Text="BMW" Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
+                        <!-- Vehicle Interface -->
+                        <Border Grid.Column="1" Background="{StaticResource CardBackgroundBrush}" 
+                                CornerRadius="10" Padding="20" Margin="4,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="🔌" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Interface" Foreground="{StaticResource SecondaryTextBrush}" FontSize="13" FontWeight="Medium"/>
                                 </StackPanel>
-                            </Border>
+                                <TextBlock Text="{Binding IsVehicleConnected, Converter={StaticResource BoolToInterfaceConverter}, FallbackValue=Disconnected}" 
+                                           Foreground="{Binding IsVehicleConnected, Converter={StaticResource BoolToStatusBrushConverter}}" 
+                                           FontWeight="Bold" FontSize="16" Margin="0,0,0,4"/>
+                                <TextBlock Text="OBD-II Ready" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                            </StackPanel>
+                        </Border>
 
-                            <!-- Power Status -->
-                            <Border Background="{StaticResource CardBackgroundBrush}" 
-                                    CornerRadius="8" Padding="16" Margin="10,0,0,0">
-                                <StackPanel>
-                                    <TextBlock Text="Power" Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
-                                    <StackPanel Orientation="Horizontal">
-                                        <TextBlock Text="KL15: " Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
-                                        <TextBlock Text="ON" Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="10"/>
-                                        <TextBlock Text=" • KL30: " Foreground="{StaticResource TertiaryTextBrush}" FontSize="10"/>
-                                        <TextBlock Text="ON" Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="10"/>
-                                    </StackPanel>
-                                    <TextBlock Text="{Binding BatteryVoltage, FallbackValue=0.0V}" 
-                                               Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Bold" FontSize="14"/>
+                        <!-- Vehicle Info -->
+                        <Border Grid.Column="2" Background="{StaticResource CardBackgroundBrush}" 
+                                CornerRadius="10" Padding="20" Margin="4,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="🚗" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Vehicle" Foreground="{StaticResource SecondaryTextBrush}" FontSize="13" FontWeight="Medium"/>
                                 </StackPanel>
-                            </Border>
-                        </UniformGrid>
+                                <TextBlock Text="{Binding VehicleVin, FallbackValue=Not Available}" 
+                                           Foreground="{StaticResource PrimaryTextBrush}" 
+                                           FontWeight="Bold" FontSize="14" Margin="0,0,0,4"
+                                           TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="Detected" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                            </StackPanel>
+                        </Border>
 
-                        <!-- Main Content Area -->
-                        <Border Grid.Row="1" Background="{StaticResource CardBackgroundBrush}" 
-                                CornerRadius="8" Padding="20">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="300"/>
-                                </Grid.ColumnDefinitions>
-
-                                <!-- Performance Chart Placeholder -->
-                                <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
-                                    <TextBlock Text="📊" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,10"/>
-                                    <TextBlock Text="Performance Monitor" 
-                                               FontSize="18" FontWeight="SemiBold" 
-                                               Foreground="{StaticResource PrimaryTextBrush}"
-                                               HorizontalAlignment="Center"/>
-                                    <TextBlock Text="Real-time vehicle data will appear here" 
-                                               Foreground="{StaticResource SecondaryTextBrush}"
-                                               HorizontalAlignment="Center" Margin="0,5,0,0"/>
-                                    <Button Content="Refresh Data" 
-                                            Command="{Binding RefreshDataCommand}"
-                                            Margin="0,20,0,0" Padding="16,8" 
-                                            Background="{StaticResource PrimaryAccentBrush}"
-                                            Foreground="White" BorderThickness="0" 
-                                            Cursor="Hand"/>
+                        <!-- Power Status -->
+                        <Border Grid.Column="3" Background="{StaticResource CardBackgroundBrush}" 
+                                CornerRadius="10" Padding="20" Margin="4,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="⚡" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Power" Foreground="{StaticResource SecondaryTextBrush}" FontSize="13" FontWeight="Medium"/>
                                 </StackPanel>
-
-                                <!-- Right Panel - Recent Activity -->
-                                <StackPanel Grid.Column="1" Margin="20,0,0,0">
-                                    <TextBlock Text="Connection Details" 
-                                               FontWeight="SemiBold" 
-                                               Foreground="{StaticResource PrimaryTextBrush}"
-                                               Margin="0,0,0,15"/>
-
-                                    <StackPanel>
-                                        <StackPanel Margin="0,0,0,8">
-                                            <TextBlock Text="Your IP:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
-                                            <TextBlock Text="{Binding LocalIpAddress, FallbackValue=Not Available}" 
-                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium"/>
-                                        </StackPanel>
-
-                                        <StackPanel Margin="0,0,0,8">
-                                            <TextBlock Text="Server:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
-                                            <TextBlock Text="United Kingdom" Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium"/>
-                                        </StackPanel>
-
-                                        <StackPanel Margin="0,0,0,8">
-                                            <TextBlock Text="Session Time:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
-                                            <TextBlock Text="00:23:45" Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium"/>
-                                        </StackPanel>
-
-                                        <StackPanel Margin="0,0,0,8">
-                                            <TextBlock Text="Data Usage:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
-                                            <TextBlock Text="2.4 MB" Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium"/>
-                                        </StackPanel>
-                                    </StackPanel>
+                                <TextBlock Text="{Binding BatteryVoltage, FallbackValue=0.0V}" 
+                                           Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Bold" FontSize="16" Margin="0,0,0,4"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="KL15: " Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
+                                    <TextBlock Text="{Binding Kl15Status, FallbackValue=OFF}" 
+                                               Foreground="{Binding Kl15Status, Converter={StaticResource StatusToColorConverter}}" 
+                                               FontWeight="Bold" FontSize="11"/>
+                                    <TextBlock Text=" • KL30: " Foreground="{StaticResource TertiaryTextBrush}" FontSize="11"/>
+                                    <TextBlock Text="{Binding Kl30Status, FallbackValue=OFF}" 
+                                               Foreground="{Binding Kl30Status, Converter={StaticResource StatusToColorConverter}}" 
+                                               FontWeight="Bold" FontSize="11"/>
                                 </StackPanel>
-                            </Grid>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Engine Status -->
+                        <Border Grid.Column="4" Background="{StaticResource CardBackgroundBrush}" 
+                                CornerRadius="10" Padding="20" Margin="8,0,0,0">
+                            <StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                                    <TextBlock Text="🔧" FontSize="16" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Engine" Foreground="{StaticResource SecondaryTextBrush}" FontSize="13" FontWeight="Medium"/>
+                                </StackPanel>
+                                <TextBlock Text="{Binding IgnitionStatus, FallbackValue=OFF}" 
+                                           Foreground="{Binding IgnitionStatus, Converter={StaticResource StatusToColorConverter}}" 
+                                           FontWeight="Bold" FontSize="16" Margin="0,0,0,4"/>
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="{Binding EngineRpm, FallbackValue=0}" 
+                                               Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                    <TextBlock Text=" RPM" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                </StackPanel>
+                            </StackPanel>
                         </Border>
                     </Grid>
+
+                    <!-- Main Content Area -->
+                    <Border Grid.Row="2" Background="{StaticResource CardBackgroundBrush}" 
+                            CornerRadius="12" Padding="25">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="2*"/>
+                                <ColumnDefinition Width="350"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Performance Chart Area -->
+                            <StackPanel Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Center">
+                                <!-- Connection Progress Indicator -->
+                                <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                        CornerRadius="15" Padding="30" Margin="0,0,0,25"
+                                        Visibility="{Binding IsConnecting, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="🔄" FontSize="48" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                                        <TextBlock Text="Establishing Connection..." 
+                                                   FontSize="18" FontWeight="SemiBold" 
+                                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                                   HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                        <TextBlock Text="{Binding ConnectionStatus}" 
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Main Dashboard Content -->
+                                <StackPanel Visibility="{Binding IsConnecting, Converter={StaticResource InverseBoolToVisibilityConverter}}">
+                                    <TextBlock Text="📊" FontSize="64" HorizontalAlignment="Center" Margin="0,0,0,15"/>
+                                    <TextBlock Text="Vehicle Diagnostic Monitor" 
+                                               FontSize="24" FontWeight="Bold" 
+                                               Foreground="{StaticResource PrimaryTextBrush}"
+                                               HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                    <TextBlock Text="Real-time vehicle data and VPN connection status" 
+                                               Foreground="{StaticResource SecondaryTextBrush}"
+                                               HorizontalAlignment="Center" FontSize="14" Margin="0,0,0,25"/>
+
+                                    <!-- Live Data Grid -->
+                                    <UniformGrid Columns="2" HorizontalAlignment="Center">
+                                        <!-- Battery Voltage -->
+                                        <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                                CornerRadius="8" Padding="20" Margin="5">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="🔋" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                <TextBlock Text="Battery Voltage" 
+                                                           Foreground="{StaticResource TertiaryTextBrush}" 
+                                                           FontSize="12" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding BatteryVoltage, FallbackValue=0.0V}" 
+                                                           Foreground="{StaticResource PrimaryTextBrush}" 
+                                                           FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Vehicle Speed -->
+                                        <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                                CornerRadius="8" Padding="20" Margin="5">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="🏎️" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                <TextBlock Text="Vehicle Speed" 
+                                                           Foreground="{StaticResource TertiaryTextBrush}" 
+                                                           FontSize="12" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding VehicleSpeed, FallbackValue=0 km/h}" 
+                                                           Foreground="{StaticResource PrimaryTextBrush}" 
+                                                           FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Engine RPM -->
+                                        <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                                CornerRadius="8" Padding="20" Margin="5">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="⚙️" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                <TextBlock Text="Engine RPM" 
+                                                           Foreground="{StaticResource TertiaryTextBrush}" 
+                                                           FontSize="12" HorizontalAlignment="Center"/>
+                                                <TextBlock Text="{Binding EngineRpm, FallbackValue=0}" 
+                                                           Foreground="{StaticResource PrimaryTextBrush}" 
+                                                           FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Border>
+
+                                        <!-- Network Latency -->
+                                        <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                                CornerRadius="8" Padding="20" Margin="5">
+                                            <StackPanel HorizontalAlignment="Center">
+                                                <TextBlock Text="📡" FontSize="24" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+                                                <TextBlock Text="Network Latency" 
+                                                           Foreground="{StaticResource TertiaryTextBrush}" 
+                                                           FontSize="12" HorizontalAlignment="Center"/>
+                                                <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
+                                                    <TextBlock Text="{Binding PingLatency, FallbackValue=0}" 
+                                                               Foreground="{StaticResource PrimaryTextBrush}" 
+                                                               FontSize="20" FontWeight="Bold"/>
+                                                    <TextBlock Text=" ms" 
+                                                               Foreground="{StaticResource PrimaryTextBrush}" 
+                                                               FontSize="20" FontWeight="Bold"/>
+                                                </StackPanel>
+                                            </StackPanel>
+                                        </Border>
+                                    </UniformGrid>
+                                </StackPanel>
+                            </StackPanel>
+
+                            <!-- Right Panel - Connection Details -->
+                            <StackPanel Grid.Column="1" Margin="30,0,0,0">
+                                <TextBlock Text="Connection Details" 
+                                           FontWeight="Bold" FontSize="18"
+                                           Foreground="{StaticResource PrimaryTextBrush}"
+                                           Margin="0,0,0,20"/>
+
+                                <!-- VPN Information -->
+                                <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                        CornerRadius="8" Padding="16" Margin="0,0,0,15">
+                                    <StackPanel>
+                                        <TextBlock Text="🌐 VPN Connection" 
+                                                   FontWeight="SemiBold" FontSize="14"
+                                                   Foreground="{StaticResource PrimaryTextBrush}" 
+                                                   Margin="0,0,0,12"/>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Your IP:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding LocalIpAddress, FallbackValue=Not Available}" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Server:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding ServerLocation, FallbackValue=Unknown}" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Session Time:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding SessionDuration, FallbackValue=00:00:00}" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <StackPanel>
+                                            <TextBlock Text="Data Usage:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding DataUsage, FallbackValue=0.0 KB}" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium" FontSize="14"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Vehicle Information -->
+                                <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                        CornerRadius="8" Padding="16" Margin="0,0,0,15">
+                                    <StackPanel>
+                                        <TextBlock Text="🚗 Vehicle Information" 
+                                                   FontWeight="SemiBold" FontSize="14"
+                                                   Foreground="{StaticResource PrimaryTextBrush}" 
+                                                   Margin="0,0,0,12"/>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="VIN:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding VehicleVin, FallbackValue=Not Available}" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium" FontSize="12"
+                                                       TextWrapping="Wrap"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Connection Mode:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding ConnectionMode, FallbackValue=Unknown}" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Ignition:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding IgnitionStatus, FallbackValue=OFF}" 
+                                                       Foreground="{Binding IgnitionStatus, Converter={StaticResource StatusToColorConverter}}" 
+                                                       FontWeight="Bold" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <StackPanel>
+                                            <TextBlock Text="Power Rails:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <StackPanel Orientation="Horizontal">
+                                                <TextBlock Text="KL15: " Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                                <TextBlock Text="{Binding Kl15Status, FallbackValue=OFF}" 
+                                                           Foreground="{Binding Kl15Status, Converter={StaticResource StatusToColorConverter}}" 
+                                                           FontWeight="Bold" FontSize="12" Margin="0,0,10,0"/>
+                                                <TextBlock Text="KL30: " Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                                <TextBlock Text="{Binding Kl30Status, FallbackValue=OFF}" 
+                                                           Foreground="{Binding Kl30Status, Converter={StaticResource StatusToColorConverter}}" 
+                                                           FontWeight="Bold" FontSize="12"/>
+                                            </StackPanel>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- System Status -->
+                                <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                        CornerRadius="8" Padding="16">
+                                    <StackPanel>
+                                        <TextBlock Text="⚙️ System Status" 
+                                                   FontWeight="SemiBold" FontSize="14"
+                                                   Foreground="{StaticResource PrimaryTextBrush}" 
+                                                   Margin="0,0,0,12"/>
+
+                                        <StackPanel Margin="0,0,0,8">
+                                            <TextBlock Text="Overall Status:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding ConnectionStatus, FallbackValue=Disconnected}" 
+                                                       Foreground="{Binding IsOverallConnected, Converter={StaticResource BoolToStatusBrushConverter}}" 
+                                                       FontWeight="Bold" FontSize="14"/>
+                                        </StackPanel>
+
+                                        <StackPanel>
+                                            <TextBlock Text="Last Update:" Foreground="{StaticResource TertiaryTextBrush}" FontSize="12"/>
+                                            <TextBlock Text="{Binding LastUpdateTime, FallbackValue=Never}" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}" FontWeight="Medium" FontSize="14"/>
+                                        </StackPanel>
+                                    </StackPanel>
+                                </Border>
+                            </StackPanel>
+                        </Grid>
+                    </Border>
                 </Grid>
             </Border>
         </Grid>

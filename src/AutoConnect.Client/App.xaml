@@ -1,7 +1,8 @@
 ﻿<Application x:Class="AutoConnect.Client.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:ui="http://schemas.modernwpf.com/2019">
+             xmlns:ui="http://schemas.modernwpf.com/2019"
+             xmlns:converters="clr-namespace:AutoConnect.Client.Converters">
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
@@ -11,6 +12,14 @@
 
                 <!-- Custom Resources -->
                 <ResourceDictionary>
+                    <!-- Value Converters -->
+                    <converters:BoolToConnectedConverter x:Key="BoolToConnectedConverter"/>
+                    <converters:BoolToInterfaceConverter x:Key="BoolToInterfaceConverter"/>
+                    <converters:BoolToStatusBrushConverter x:Key="BoolToStatusBrushConverter"/>
+                    <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
+                    <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
+                    <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+
                     <!-- AutoConnect Color Palette -->
 
                     <!-- Background Colors -->
