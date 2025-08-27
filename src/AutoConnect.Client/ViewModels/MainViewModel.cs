@@ -1,8 +1,12 @@
+using AutoConnect.Client.Helpers;
 using AutoConnect.Client.Services;
+using AutoConnect.Client.Views;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System.IO;
 using System.Windows;
 
 namespace AutoConnect.Client.ViewModels;
@@ -15,6 +19,8 @@ public partial class MainViewModel : ObservableObject
     private readonly ILogger<MainViewModel> _logger;
     private readonly IErrorHandlingService? _errorHandlingService;
     private readonly INotificationService? _notificationService;
+    private readonly IConfiguration _configuration;
+
 
     // Connection Status Properties
     [ObservableProperty]
@@ -90,9 +96,11 @@ public partial class MainViewModel : ObservableObject
         IApiService apiService,
         IVehicleService vehicleService,
         IVpnService vpnService,
+           IConfiguration configuration,
         ILogger<MainViewModel> logger)
     {
         _apiService = apiService;
+        _configuration = configuration;
         _vehicleService = vehicleService;
         _vpnService = vpnService;
         _logger = logger;
@@ -616,6 +624,93 @@ public partial class MainViewModel : ObservableObject
             {
                 await _errorHandlingService.HandleErrorAsync("Disconnect", ex, ErrorSeverity.Warning);
             }
+        }
+    }
+
+    [RelayCommand]
+    private async Task OpenVpnSetup()
+    {
+        try
+        {
+            // Get required services
+            if (Application.Current is App app && app.ServiceProvider != null)
+            {
+                var logger = app.ServiceProvider.GetService<ILogger<OpenVpnSetupWindow>>();
+                var configuration = app.ServiceProvider.GetRequiredService<IConfiguration>();
+
+                // Create config helper
+                var configHelperLogger = app.ServiceProvider.GetService<ILogger<OpenVpnConfigHelper>>();
+                var configHelper = new OpenVpnConfigHelper(configHelperLogger!);
+
+                var setupWindow = new OpenVpnSetupWindow(logger!, configuration, configHelper)
+                {
+                    Owner = Application.Current.MainWindow
+                };
+
+                var result = setupWindow.ShowDialog();
+
+                if (result == true && setupWindow.ConfigurationSaved)
+                {
+                    // Configuration was saved, we might want to reconnect VPN
+                    if (_notificationService != null)
+                    {
+                        await _notificationService.ShowTemporaryNotificationAsync(
+                            "OpenVPN configuration updated. Reconnecting...",
+                            NotificationType.Info, 3);
+                    }
+
+                    // Disconnect current VPN and reconnect with new config
+                    if (IsVpnConnected)
+                    {
+                        await _vpnService.DisconnectAsync();
+                        await Task.Delay(2000); // Brief delay
+
+                        var reconnected = await _vpnService.ConnectAsync();
+                        if (reconnected && _notificationService != null)
+                        {
+                            await _notificationService.ShowTemporaryNotificationAsync(
+                                "Successfully connected with new OpenVPN configuration",
+                                NotificationType.Success, 3);
+                        }
+                    }
+
+                    _logger.LogInformation("OpenVPN configuration updated via setup window");
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error opening VPN setup window");
+
+            if (_errorHandlingService != null)
+            {
+                await _errorHandlingService.HandleErrorAsync("VPN Setup", ex, ErrorSeverity.Warning);
+            }
+        }
+    }
+
+    // Also add this method to check VPN setup status
+    private async Task<bool> CheckVpnConfigurationAsync()
+    {
+        try
+        {
+            var configPath = _configuration["VpnSettings:ConfigPath"] ??
+                Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "vpn-configs", "client.ovpn");
+
+            if (!File.Exists(configPath))
+            {
+                _logger.LogWarning("OpenVPN configuration file not found: {ConfigPath}", configPath);
+                return false;
+            }
+
+            // Basic validation - just check if file has required content
+            var content = await File.ReadAllTextAsync(configPath);
+            return content.Contains("client") && content.Contains("remote");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error checking VPN configuration");
+            return false;
         }
     }
 

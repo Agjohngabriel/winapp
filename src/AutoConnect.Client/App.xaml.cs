@@ -1,6 +1,7 @@
 ﻿using AutoConnect.Client.Configuration;
 using AutoConnect.Client.Services;
 using AutoConnect.Client.ViewModels;
+using AutoConnect.Client.Views;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -96,7 +97,7 @@ public partial class App : Application
         // Services - Use existing implementations for now
         services.AddSingleton<IApiService, ApiService>();
         services.AddSingleton<IVehicleService, ObdVehicleService>();
-        services.AddSingleton<IVpnService, ProcessVpnService>();
+        services.AddSingleton<IVpnService, OpenVpnService>();
         services.AddSingleton<Services.INavigationService, Services.NavigationService>();
 
         // ViewModels
@@ -106,6 +107,7 @@ public partial class App : Application
 
         // Views
         services.AddTransient<MainWindow>();
+        services.AddTransient<OpenVpnSetupWindow>();
     }
 
     private void SetupExceptionHandling()
