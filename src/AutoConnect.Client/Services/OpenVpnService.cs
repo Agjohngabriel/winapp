@@ -300,13 +300,15 @@ public class OpenVpnService : IVpnService, IDisposable
         {
             $"--config \"{_configPath}\"",
             $"--log-append \"{_logFilePath}\"",
-            "--verb 3", // Verbose logging
+            "--verb 4", // More verbose logging
             "--status-version 3",
             "--suppress-timestamps", // Cleaner log parsing
             "--management 127.0.0.1 7505", // Management interface for monitoring
             "--management-client-auth",
             "--management-query-passwords",
-            "--management-hold"
+            "--management-hold",
+            "--data-ciphers AES-256-GCM:AES-128-GCM:AES-128-CBC:CHACHA20-POLY1305", // Modern cipher support
+            "--allow-compression no" // Disable compression warnings
         };
 
         // Add platform-specific arguments for Windows
