@@ -127,10 +127,15 @@ public class OpenVpnService : IVpnService, IDisposable
 
     private string FindOpenVpnExecutable()
     {
+        var baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
         var possiblePaths = new[]
         {
             // Bundled OpenVPN (first priority - in application directory)
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "openvpn", "openvpn.exe"),
+            Path.Combine(baseDirectory, "tools", "openvpn", "openvpn.exe"),
+            
+            // Alternative bundled paths (for different build configurations)
+            Path.Combine(baseDirectory, "openvpn.exe"),
+            Path.Combine(Path.GetDirectoryName(baseDirectory) ?? baseDirectory, "tools", "openvpn", "openvpn.exe"),
             
             // System OpenVPN installations
             @"C:\Program Files\OpenVPN\bin\openvpn.exe",
@@ -139,10 +144,14 @@ public class OpenVpnService : IVpnService, IDisposable
             @"openvpn.exe" // Try system PATH
         };
 
+        _logger.LogInformation("Searching for OpenVPN executable in base directory: {BaseDirectory}", baseDirectory);
+        
         foreach (var path in possiblePaths)
         {
             try
             {
+                _logger.LogDebug("Checking OpenVPN path: {Path}", path);
+                
                 if (path == "openvpn.exe")
                 {
                     // Test if openvpn is in system PATH
@@ -167,6 +176,8 @@ public class OpenVpnService : IVpnService, IDisposable
                 }
                 else if (File.Exists(path))
                 {
+                    _logger.LogInformation("Found OpenVPN executable at: {Path}", path);
+                    
                     // Test the executable
                     var testProcess = Process.Start(new ProcessStartInfo
                     {
