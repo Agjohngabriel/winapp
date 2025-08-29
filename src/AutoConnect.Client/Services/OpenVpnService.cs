@@ -305,7 +305,6 @@ public class OpenVpnService : IVpnService, IDisposable
             "--suppress-timestamps", // Cleaner log parsing
             "--management 127.0.0.1 7505", // Management interface for monitoring
             "--management-client-auth",
-            "--management-query-passwords",
             "--data-ciphers AES-256-GCM:AES-128-GCM:AES-128-CBC:CHACHA20-POLY1305", // Modern cipher support
             "--allow-compression no" // Disable compression warnings
         };
