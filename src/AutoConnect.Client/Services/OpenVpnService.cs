@@ -122,9 +122,8 @@ public class OpenVpnService : IVpnService, IDisposable
     {
         var possiblePaths = new[]
         {
-            // Bundled OpenVPN (first priority)
+            // Bundled OpenVPN (first priority - in application directory)
             Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "tools", "openvpn", "openvpn.exe"),
-            Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "bin-tools", "openvpn", "openvpn.exe"),
             
             // System OpenVPN installations
             @"C:\Program Files\OpenVPN\bin\openvpn.exe",

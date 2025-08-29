@@ -48,8 +48,7 @@
 		<None Update="appsettings.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
-		<None Include="..\..\tools\openvpn\**\*">
-			<Link>tools\openvpn\%(RecursiveDir)%(Filename)%(Extension)</Link>
+		<None Include="tools\openvpn\**\*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
 		</None>
 	</ItemGroup>
