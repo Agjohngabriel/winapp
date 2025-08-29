@@ -105,14 +105,13 @@
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Padding" Value="16,8"/>
                         <Setter Property="FontWeight" Value="Medium"/>
-                        <Setter Property="CornerRadius" Value="6"/>
                         <Setter Property="Cursor" Value="Hand"/>
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="border" 
                                             Background="{TemplateBinding Background}"
-                                            CornerRadius="{TemplateBinding CornerRadius}">
+                                            CornerRadius="6">
                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                                         Margin="{TemplateBinding Padding}"/>
                                     </Border>
@@ -137,7 +136,6 @@
                         <Setter Property="BorderBrush" Value="{StaticResource PrimaryBorderBrush}"/>
                         <Setter Property="Padding" Value="16,8"/>
                         <Setter Property="FontWeight" Value="Medium"/>
-                        <Setter Property="CornerRadius" Value="6"/>
                         <Setter Property="Cursor" Value="Hand"/>
                         <Setter Property="Template">
                             <Setter.Value>
@@ -146,7 +144,7 @@
                                             Background="{TemplateBinding Background}"
                                             BorderBrush="{TemplateBinding BorderBrush}"
                                             BorderThickness="{TemplateBinding BorderThickness}"
-                                            CornerRadius="{TemplateBinding CornerRadius}">
+                                            CornerRadius="6">
                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                                         Margin="{TemplateBinding Padding}"/>
                                     </Border>
@@ -170,14 +168,13 @@
                         <Setter Property="BorderThickness" Value="0"/>
                         <Setter Property="Padding" Value="16,8"/>
                         <Setter Property="FontWeight" Value="Medium"/>
-                        <Setter Property="CornerRadius" Value="6"/>
                         <Setter Property="Cursor" Value="Hand"/>
                         <Setter Property="Template">
                             <Setter.Value>
                                 <ControlTemplate TargetType="Button">
                                     <Border x:Name="border" 
                                             Background="{TemplateBinding Background}"
-                                            CornerRadius="{TemplateBinding CornerRadius}">
+                                            CornerRadius="6">
                                         <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
                                                         Margin="{TemplateBinding Padding}"/>
                                     </Border>
