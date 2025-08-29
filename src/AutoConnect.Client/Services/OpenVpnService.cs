@@ -83,6 +83,13 @@ public class OpenVpnService : IVpnService, IDisposable
                 return false;
             }
 
+            // Ensure TAP adapter is installed
+            if (!await EnsureTapAdapterAsync())
+            {
+                _logger.LogError("Failed to install or find TAP adapter.");
+                return false;
+            }
+
             // Verify config file exists
             if (!File.Exists(_configPath))
             {
@@ -765,6 +772,86 @@ public class OpenVpnService : IVpnService, IDisposable
             }
         }
     }
+
+    private async Task<bool> EnsureTapAdapterAsync()
+    {
+        try
+        {
+            var tapCtlPath = Path.Combine(Path.GetDirectoryName(_openVpnPath)!, "tapctl.exe");
+            if (!File.Exists(tapCtlPath))
+            {
+                _logger.LogWarning("tapctl.exe not found at: {TapCtlPath}", tapCtlPath);
+                return true; // Continue without installing, maybe system has TAP adapter
+            }
+
+            // Check if TAP adapter already exists
+            var listProcess = Process.Start(new ProcessStartInfo
+            {
+                FileName = tapCtlPath,
+                Arguments = "list",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            });
+
+            if (listProcess != null)
+            {
+                listProcess.WaitForExit(10000);
+                var output = listProcess.StandardOutput.ReadToEnd();
+                
+                if (output.Contains("TAP-Windows") || output.Contains("Wintun"))
+                {
+                    _logger.LogInformation("TAP adapter already installed");
+                    return true;
+                }
+            }
+
+            // Install TAP adapter
+            _logger.LogInformation("Installing TAP adapter...");
+            var installProcess = Process.Start(new ProcessStartInfo
+            {
+                FileName = tapCtlPath,
+                Arguments = "create --name \"OpenVPN TAP\"",
+                UseShellExecute = false,
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                CreateNoWindow = true
+            });
+
+            if (installProcess != null)
+            {
+                installProcess.WaitForExit(30000);
+                var exitCode = installProcess.ExitCode;
+                var output = installProcess.StandardOutput.ReadToEnd();
+                var error = installProcess.StandardError.ReadToEnd();
+
+                _logger.LogDebug("tapctl create output: {Output}", output);
+                if (!string.IsNullOrEmpty(error))
+                {
+                    _logger.LogDebug("tapctl create error: {Error}", error);
+                }
+
+                if (exitCode == 0)
+                {
+                    _logger.LogInformation("TAP adapter installed successfully");
+                    return true;
+                }
+                else
+                {
+                    _logger.LogWarning("TAP adapter installation failed with exit code: {ExitCode}", exitCode);
+                }
+            }
+
+            return true; // Continue even if TAP installation failed, let OpenVPN try
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error ensuring TAP adapter");
+            return true; // Continue even if failed
+        }
+    }
+
     public void Dispose()
     {
         try
