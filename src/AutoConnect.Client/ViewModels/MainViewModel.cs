@@ -8,6 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 
 namespace AutoConnect.Client.ViewModels;
 
@@ -76,6 +77,9 @@ public partial class MainViewModel : ObservableObject
     // UI State Properties
     [ObservableProperty]
     private string currentView = "Dashboard";
+
+    [ObservableProperty]
+    private UserControl? currentViewContent = null;
 
     [ObservableProperty]
     private bool isConnecting = false;
@@ -494,6 +498,18 @@ public partial class MainViewModel : ObservableObject
         try
         {
             CurrentView = viewName;
+            
+            // Create the appropriate view
+            CurrentViewContent = viewName switch
+            {
+                "Dashboard" => null, // Dashboard uses the existing hardcoded layout
+                "VehicleData" => new VehicleDataView(),
+                "Diagnostics" => new DiagnosticsView(),
+                "Performance" => new PerformanceView(),
+                "Settings" => new SettingsView(),
+                _ => null
+            };
+            
             _logger.LogInformation("Navigated to {ViewName}", viewName);
         }
         catch (Exception ex)

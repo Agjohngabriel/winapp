@@ -19,6 +19,7 @@
                     <converters:StatusToColorConverter x:Key="StatusToColorConverter"/>
                     <converters:BoolToVisibilityConverter x:Key="BoolToVisibilityConverter"/>
                     <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisibilityConverter"/>
+                    <converters:NullToVisibilityConverter x:Key="NullToVisibilityConverter"/>
 
                     <!-- AutoConnect Color Palette -->
 

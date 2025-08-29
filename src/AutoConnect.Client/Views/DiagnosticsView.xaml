@@ -1,0 +1,210 @@
+﻿<UserControl x:Class="AutoConnect.Client.Views.DiagnosticsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,25">
+            <TextBlock Text="🔧 Diagnostics" 
+                       FontSize="28" FontWeight="Bold" 
+                       Foreground="{StaticResource PrimaryTextBrush}"/>
+            <Border Background="{StaticResource WarningBrush}" CornerRadius="8" 
+                    Padding="8,4" Margin="15,5,0,0" VerticalAlignment="Top">
+                <TextBlock Text="SCAN" FontSize="11" FontWeight="Bold" Foreground="White"/>
+            </Border>
+        </StackPanel>
+
+        <!-- Content -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Diagnostic Actions -->
+            <Border Grid.Row="0" Background="{StaticResource CardBackgroundBrush}" 
+                    CornerRadius="12" Padding="25" Margin="0,0,0,20">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="🔍 Diagnostic Scan" 
+                                   FontSize="18" FontWeight="SemiBold" 
+                                   Foreground="{StaticResource PrimaryTextBrush}" Margin="0,0,0,5"/>
+                        <TextBlock Text="Scan for diagnostic trouble codes (DTCs) and system status" 
+                                   Foreground="{StaticResource SecondaryTextBrush}" FontSize="14"/>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal">
+                        <Button Content="🔄 Scan DTCs" 
+                                Style="{StaticResource AccentButtonStyle}" 
+                                Margin="10,0"/>
+                        <Button Content="🗑️ Clear Codes" 
+                                Style="{StaticResource DangerButtonStyle}"/>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Diagnostic Results -->
+            <Grid Grid.Row="1">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="2*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- DTC List -->
+                <Border Grid.Column="0" Background="{StaticResource CardBackgroundBrush}" 
+                        CornerRadius="12" Padding="25" Margin="0,0,15,0">
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                            <TextBlock Text="⚠️ Diagnostic Trouble Codes" 
+                                       FontSize="18" FontWeight="SemiBold" 
+                                       Foreground="{StaticResource PrimaryTextBrush}"/>
+                            <Border Background="{StaticResource SuccessBrush}" CornerRadius="12" 
+                                    Padding="8,4" Margin="15,0,0,0" VerticalAlignment="Center">
+                                <TextBlock Text="No Codes" FontSize="11" FontWeight="Bold" Foreground="White"/>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Sample DTCs (this would be data-bound in real implementation) -->
+                        <ScrollViewer MaxHeight="400">
+                            <StackPanel>
+                                <!-- No codes found message -->
+                                <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                        CornerRadius="8" Padding="20" Margin="0,0,0,10">
+                                    <StackPanel HorizontalAlignment="Center">
+                                        <TextBlock Text="✅" FontSize="32" HorizontalAlignment="Center" Margin="0,0,0,10"/>
+                                        <TextBlock Text="No Diagnostic Trouble Codes Found" 
+                                                   FontSize="16" FontWeight="SemiBold" 
+                                                   Foreground="{StaticResource PrimaryTextBrush}"
+                                                   HorizontalAlignment="Center" Margin="0,0,0,5"/>
+                                        <TextBlock Text="Vehicle systems are operating normally" 
+                                                   Foreground="{StaticResource SecondaryTextBrush}"
+                                                   HorizontalAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+
+                                <!-- Example DTC (hidden by default) -->
+                                <Border Background="{StaticResource ErrorBackgroundBrush}" 
+                                        CornerRadius="8" Padding="15" Margin="0,0,0,10"
+                                        Visibility="Collapsed">
+                                    <Grid>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <Border Grid.Column="0" Background="{StaticResource ErrorBrush}" 
+                                                CornerRadius="4" Padding="8,4" Margin="0,0,15,0">
+                                            <TextBlock Text="P0420" FontWeight="Bold" Foreground="White" FontSize="14"/>
+                                        </Border>
+
+                                        <StackPanel Grid.Column="1">
+                                            <TextBlock Text="Catalyst System Efficiency Below Threshold" 
+                                                       FontWeight="SemiBold" FontSize="14" 
+                                                       Foreground="{StaticResource PrimaryTextBrush}"/>
+                                            <TextBlock Text="Bank 1 - Possible catalytic converter malfunction" 
+                                                       Foreground="{StaticResource SecondaryTextBrush}" FontSize="12"/>
+                                        </StackPanel>
+
+                                        <TextBlock Grid.Column="2" Text="ACTIVE" 
+                                                   FontWeight="Bold" FontSize="12" 
+                                                   Foreground="{StaticResource ErrorBrush}" 
+                                                   VerticalAlignment="Center"/>
+                                    </Grid>
+                                </Border>
+                            </StackPanel>
+                        </ScrollViewer>
+                    </StackPanel>
+                </Border>
+
+                <!-- System Status -->
+                <Border Grid.Column="1" Background="{StaticResource CardBackgroundBrush}" 
+                        CornerRadius="12" Padding="20">
+                    <StackPanel>
+                        <TextBlock Text="🛠️ System Status" 
+                                   FontSize="16" FontWeight="SemiBold" 
+                                   Foreground="{StaticResource PrimaryTextBrush}" Margin="0,0,0,20"/>
+
+                        <!-- Readiness Tests -->
+                        <StackPanel>
+                            <TextBlock Text="OBD-II Readiness Tests:" 
+                                       Foreground="{StaticResource TertiaryTextBrush}" 
+                                       FontSize="12" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                            <!-- Sample readiness tests -->
+                            <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                    CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Engine Systems" FontSize="12"/>
+                                    <TextBlock Grid.Column="1" Text="✅ READY" 
+                                               Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="11"/>
+                                </Grid>
+                            </Border>
+
+                            <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                    CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Catalyst Monitor" FontSize="12"/>
+                                    <TextBlock Grid.Column="1" Text="✅ READY" 
+                                               Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="11"/>
+                                </Grid>
+                            </Border>
+
+                            <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                    CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="Oxygen Sensors" FontSize="12"/>
+                                    <TextBlock Grid.Column="1" Text="⏳ NOT READY" 
+                                               Foreground="{StaticResource WarningBrush}" FontWeight="Bold" FontSize="11"/>
+                                </Grid>
+                            </Border>
+
+                            <Border Background="{StaticResource TertiaryBackgroundBrush}" 
+                                    CornerRadius="6" Padding="12" Margin="0,0,0,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="EVAP System" FontSize="12"/>
+                                    <TextBlock Grid.Column="1" Text="✅ READY" 
+                                               Foreground="{StaticResource SuccessBrush}" FontWeight="Bold" FontSize="11"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+
+                        <!-- Action Buttons -->
+                        <StackPanel Margin="0,20,0,0">
+                            <Button Content="📊 View Details" 
+                                    Style="{StaticResource SecondaryButtonStyle}" 
+                                    Margin="0,0,0,8"/>
+                            <Button Content="📄 Export Report" 
+                                    Style="{StaticResource SecondaryButtonStyle}"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>
