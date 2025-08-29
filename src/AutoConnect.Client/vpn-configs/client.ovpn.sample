@@ -1,0 +1,86 @@
+# AutoConnect VPN Diagnostic Platform - OpenVPN Configuration Template
+# Copy this file to 'client.ovpn' and configure with your OpenVPN server details
+
+# Client configuration
+client
+dev tun
+proto udp
+
+# Replace with your OpenVPN server details
+remote your-vpn-server.com 1194
+
+# Connection settings
+resolv-retry infinite
+nobind
+persist-key
+persist-tun
+
+# Authentication (certificates)
+# Replace these with your actual certificate files
+ca ca.crt
+cert client.crt
+key client.key
+
+# Optional: Use inline certificates instead of separate files
+# <ca>
+# -----BEGIN CERTIFICATE-----
+# [Your CA certificate content here]
+# -----END CERTIFICATE-----
+# </ca>
+
+# <cert>
+# -----BEGIN CERTIFICATE-----
+# [Your client certificate content here]
+# -----END CERTIFICATE-----
+# </cert>
+
+# <key>
+# -----BEGIN PRIVATE KEY-----
+# [Your client private key content here]
+# -----END PRIVATE KEY-----
+# </key>
+
+# Security settings
+cipher AES-256-CBC
+auth SHA256
+key-direction 1
+
+# Optional: TLS authentication
+# <tls-auth>
+# -----BEGIN OpenVPN Static key V1-----
+# [Your TLS auth key content here]
+# -----END OpenVPN Static key V1-----
+# </tls-auth>
+
+# Logging and status
+verb 3
+status openvpn-status.log
+log-append openvpn.log
+
+# Windows-specific settings
+route-method exe
+redirect-gateway def1
+
+# Prevent DNS leaks
+dhcp-option DNS 8.8.8.8
+dhcp-option DNS 8.8.4.4
+
+# Compression (if supported by server)
+comp-lzo
+
+# Keep connection alive
+keepalive 10 60
+
+# Connection timeout
+connect-timeout 30
+connect-retry-max 3
+
+# Management interface for AutoConnect to monitor connection
+management 127.0.0.1 7505
+
+# Optional: Authentication with username/password
+# auth-user-pass
+
+# Optional: Server certificate verification
+# remote-cert-tls server
+# verify-x509-name server_hostname name
