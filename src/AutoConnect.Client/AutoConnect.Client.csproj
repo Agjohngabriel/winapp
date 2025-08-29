@@ -48,13 +48,61 @@
 	<ItemGroup>
 		<None Update="appsettings.json">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 		</None>
 		<None Include="tools\openvpn\**\*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+			<Link>tools\openvpn\%(RecursiveDir)%(Filename)%(Extension)</Link>
 		</None>
 		<None Include="vpn-configs\**\*">
 			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+		
+		<!-- Ensure critical OpenVPN executables are explicitly included -->
+		<None Include="tools\openvpn\openvpn.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+		<None Include="tools\openvpn\tapctl.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+		<None Include="tools\openvpn\*.dll">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+		<None Include="tools\openvpn\openssl.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+		<None Include="tools\openvpn\openvpn-gui.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+		<None Include="tools\openvpn\openvpnserv.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
+		</None>
+		<None Include="tools\openvpn\openvpnserv2.exe">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+			<ExcludeFromSingleFile>true</ExcludeFromSingleFile>
 		</None>
 	</ItemGroup>
+
+	<!-- Build target to verify included files -->
+	<Target Name="ListIncludedFiles" AfterTargets="Build">
+		<Message Text="=== OpenVPN Files Status ===" Importance="high" />
+		<Message Text="Checking for: tools/openvpn/openvpn.exe" Importance="high" />
+		<Message Text="Checking for: tools/openvpn/tapctl.exe" Importance="high" />
+		<Message Text="Checking for: tools/openvpn/*.dll files" Importance="high" />
+		<ItemGroup>
+			<FilesToCheck Include="$(OutputPath)tools\openvpn\openvpn.exe" />
+			<FilesToCheck Include="$(OutputPath)tools\openvpn\tapctl.exe" />
+		</ItemGroup>
+		<Message Text="Files that will be copied:" Importance="high" />
+		<Message Text="@(FilesToCheck)" Importance="high" />
+	</Target>
 
 </Project>
