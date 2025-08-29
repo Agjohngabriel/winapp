@@ -254,7 +254,7 @@ public class OpenVpnService : IVpnService, IDisposable
                     RedirectStandardOutput = true,
                     RedirectStandardError = true,
                     CreateNoWindow = true,
-                    WorkingDirectory = Path.GetDirectoryName(_configPath)
+                    WorkingDirectory = AppDomain.CurrentDomain.BaseDirectory
                 }
             };
 
