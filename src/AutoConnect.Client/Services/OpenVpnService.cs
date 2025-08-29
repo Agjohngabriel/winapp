@@ -777,7 +777,10 @@ public class OpenVpnService : IVpnService, IDisposable
     {
         try
         {
+            _logger.LogInformation("Checking for TAP adapter...");
             var tapCtlPath = Path.Combine(Path.GetDirectoryName(_openVpnPath)!, "tapctl.exe");
+            
+            _logger.LogDebug("Looking for tapctl.exe at: {TapCtlPath}", tapCtlPath);
             if (!File.Exists(tapCtlPath))
             {
                 _logger.LogWarning("tapctl.exe not found at: {TapCtlPath}", tapCtlPath);
@@ -785,6 +788,7 @@ public class OpenVpnService : IVpnService, IDisposable
             }
 
             // Check if TAP adapter already exists
+            _logger.LogDebug("Checking existing TAP adapters...");
             var listProcess = Process.Start(new ProcessStartInfo
             {
                 FileName = tapCtlPath,
@@ -799,55 +803,58 @@ public class OpenVpnService : IVpnService, IDisposable
             {
                 listProcess.WaitForExit(10000);
                 var output = listProcess.StandardOutput.ReadToEnd();
+                var error = listProcess.StandardError.ReadToEnd();
                 
-                if (output.Contains("TAP-Windows") || output.Contains("Wintun"))
+                _logger.LogDebug("tapctl list output: {Output}", output);
+                if (!string.IsNullOrEmpty(error))
                 {
-                    _logger.LogInformation("TAP adapter already installed");
+                    _logger.LogDebug("tapctl list error: {Error}", error);
+                }
+                
+                if (output.Contains("TAP-Windows") || output.Contains("Wintun") || output.Contains("ovpn-dco"))
+                {
+                    _logger.LogInformation("TAP adapter already exists");
                     return true;
                 }
             }
 
-            // Install TAP adapter
-            _logger.LogInformation("Installing TAP adapter...");
+            // Try to install TAP adapter (requires admin privileges)
+            _logger.LogInformation("No TAP adapter found. Attempting to create one...");
+            _logger.LogWarning("TAP adapter creation requires administrator privileges. This may fail if not running as administrator.");
+            
             var installProcess = Process.Start(new ProcessStartInfo
             {
                 FileName = tapCtlPath,
                 Arguments = "create --name \"OpenVPN TAP\"",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true,
-                CreateNoWindow = true
+                UseShellExecute = true, // This allows UAC elevation prompt
+                RedirectStandardOutput = false, // Can't redirect when using UseShellExecute
+                RedirectStandardError = false,
+                CreateNoWindow = false,
+                Verb = "runas" // Request elevation
             });
 
             if (installProcess != null)
             {
-                installProcess.WaitForExit(30000);
+                installProcess.WaitForExit(60000); // Give more time for UAC
                 var exitCode = installProcess.ExitCode;
-                var output = installProcess.StandardOutput.ReadToEnd();
-                var error = installProcess.StandardError.ReadToEnd();
-
-                _logger.LogDebug("tapctl create output: {Output}", output);
-                if (!string.IsNullOrEmpty(error))
-                {
-                    _logger.LogDebug("tapctl create error: {Error}", error);
-                }
 
                 if (exitCode == 0)
                 {
-                    _logger.LogInformation("TAP adapter installed successfully");
+                    _logger.LogInformation("TAP adapter installation completed successfully");
                     return true;
                 }
                 else
                 {
-                    _logger.LogWarning("TAP adapter installation failed with exit code: {ExitCode}", exitCode);
+                    _logger.LogWarning("TAP adapter installation failed with exit code: {ExitCode}. You may need to run as administrator or install OpenVPN system-wide.", exitCode);
                 }
             }
 
-            return true; // Continue even if TAP installation failed, let OpenVPN try
+            _logger.LogInformation("Continuing without TAP adapter installation. OpenVPN will attempt to proceed.");
+            return true; // Continue even if TAP installation failed
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error ensuring TAP adapter");
+            _logger.LogError(ex, "Error ensuring TAP adapter. You may need to install OpenVPN system-wide or run as administrator.");
             return true; // Continue even if failed
         }
     }
