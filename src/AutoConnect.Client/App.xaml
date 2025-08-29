@@ -55,6 +55,11 @@
                     <SolidColorBrush x:Key="HoverBrush" Color="#374151"/>
                     <SolidColorBrush x:Key="PressedBrush" Color="#1F2937"/>
                     <SolidColorBrush x:Key="DisabledBrush" Color="#6B7280"/>
+                    
+                    <!-- Error/Status Background Colors -->
+                    <SolidColorBrush x:Key="ErrorBackgroundBrush" Color="#451A1A"/>
+                    <SolidColorBrush x:Key="WarningBackgroundBrush" Color="#451A03"/>
+                    <SolidColorBrush x:Key="SuccessBackgroundBrush" Color="#14532D"/>
 
                     <!-- Navigation Button Style -->
                     <Style x:Key="NavigationButtonStyle" TargetType="Button">
@@ -86,6 +91,102 @@
                                         </Trigger>
                                         <Trigger Property="IsPressed" Value="True">
                                             <Setter TargetName="border" Property="Background" Value="{StaticResource PressedBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <!-- Accent Button Style -->
+                    <Style x:Key="AccentButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource PrimaryAccentBrush}"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="16,8"/>
+                        <Setter Property="FontWeight" Value="Medium"/>
+                        <Setter Property="CornerRadius" Value="6"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="border" 
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="{TemplateBinding CornerRadius}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                        Margin="{TemplateBinding Padding}"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="border" Property="Opacity" Value="0.9"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="border" Property="Opacity" Value="0.8"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <!-- Secondary Button Style -->
+                    <Style x:Key="SecondaryButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource TertiaryBackgroundBrush}"/>
+                        <Setter Property="Foreground" Value="{StaticResource PrimaryTextBrush}"/>
+                        <Setter Property="BorderThickness" Value="1"/>
+                        <Setter Property="BorderBrush" Value="{StaticResource PrimaryBorderBrush}"/>
+                        <Setter Property="Padding" Value="16,8"/>
+                        <Setter Property="FontWeight" Value="Medium"/>
+                        <Setter Property="CornerRadius" Value="6"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="border" 
+                                            Background="{TemplateBinding Background}"
+                                            BorderBrush="{TemplateBinding BorderBrush}"
+                                            BorderThickness="{TemplateBinding BorderThickness}"
+                                            CornerRadius="{TemplateBinding CornerRadius}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                        Margin="{TemplateBinding Padding}"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="border" Property="Background" Value="{StaticResource HoverBrush}"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="border" Property="Background" Value="{StaticResource PressedBrush}"/>
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+
+                    <!-- Danger Button Style -->
+                    <Style x:Key="DangerButtonStyle" TargetType="Button">
+                        <Setter Property="Background" Value="{StaticResource ErrorBrush}"/>
+                        <Setter Property="Foreground" Value="White"/>
+                        <Setter Property="BorderThickness" Value="0"/>
+                        <Setter Property="Padding" Value="16,8"/>
+                        <Setter Property="FontWeight" Value="Medium"/>
+                        <Setter Property="CornerRadius" Value="6"/>
+                        <Setter Property="Cursor" Value="Hand"/>
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="Button">
+                                    <Border x:Name="border" 
+                                            Background="{TemplateBinding Background}"
+                                            CornerRadius="{TemplateBinding CornerRadius}">
+                                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                        Margin="{TemplateBinding Padding}"/>
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsMouseOver" Value="True">
+                                            <Setter TargetName="border" Property="Opacity" Value="0.9"/>
+                                        </Trigger>
+                                        <Trigger Property="IsPressed" Value="True">
+                                            <Setter TargetName="border" Property="Opacity" Value="0.8"/>
                                         </Trigger>
                                     </ControlTemplate.Triggers>
                                 </ControlTemplate>
